@@ -1,22 +1,18 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { getScene, registerListener, unregisterListener } from "./sceneCache";
 
+function subscribe(callback: () => void) {
+    registerListener({ id: "use_scene", type: "update_component", callback });
+    return () => unregisterListener("use_scene");
+}
+
+function getSnapshot() {
+    return getScene();
+}
+
 function useScene() {
-    const [scene, setScene] = useState<Record<string, any> | null>(getScene);
-
-    useEffect(() => {
-        function sync(details: Record<string, any>) {
-            setScene({ ...details.scene });
-        }
-
-        registerListener({ id: "use_scene", type: "update_component", callback: sync });
-
-        return () => {
-            unregisterListener("use_scene");
-        }
-    }, [])
-
-    return { scene: scene };
+    const scene = useSyncExternalStore(subscribe, getSnapshot);
+    return scene;
 }
 
 export default useScene;

@@ -1,13 +1,25 @@
+import Box from "./Box";
 import Text from "./Text";
-import type { TextBoxComponent } from "./types";
+import type { TextBoxComponent, Vec2 } from "./types";
+import { add, getBoxCenter, getRelativeBounds, mutate, scale, subtract } from "./util";
+
+function pad(verts: Vec2[], amount: number) {
+    const center = getBoxCenter(verts);
+    return verts.map(vert => {
+        const relative = subtract(center, vert);
+        const dir = mutate(relative, (val) => val / Math.abs(val));
+        return add(vert, scale(dir, amount));
+    });
+}
 
 function TextBox(component: TextBoxComponent) {
-    const { x, y, width, height, padding, content, id, strokeColor, strokeWidth } = component;
+    const { bounds, padding, content, id } = component;
+    const relative = getRelativeBounds(pad(bounds.verts, padding));
 
     return (
         <g>
-            <rect x={x} y={y} width={width} height={height} fill={component.fill} stroke={strokeColor} strokeWidth={strokeWidth} />
-            <Text {...content} id={id} x={x + padding} y={y + padding} width={width - padding * 2} height={height - padding * 2} />
+            <Box {...component} type="box" />
+            <Text {...content} id={id} bounds={relative} />
         </g>
     )
 }

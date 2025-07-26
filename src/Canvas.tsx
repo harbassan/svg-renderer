@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import CanvasContext from "./CanvasContext";
 import useScene from "./useScene";
 import Overlay, { type DragHandlerRef } from "./Overlay";
 import type { Component } from "./types";
 import TextBox from "./TextBox";
-
+import Speech from "./Speech";
+import Ellipse from "./Ellipse";
+import Box from "./Box";
+import Image from "./Image";
 
 function Canvas() {
-    const { scene } = useScene();
     const [selected, setSelected] = useState<string>("");
+    const scene = useScene();
 
     const dragHandlerRef = useRef<DragHandlerRef>(null);
     const canvasRef = useRef<SVGSVGElement | null>(null);
@@ -24,7 +27,7 @@ function Canvas() {
     }
 
     function deselect() {
-        // setSelected("");
+        setSelected("");
     }
 
     if (!scene) {
@@ -33,18 +36,18 @@ function Canvas() {
 
     function resolve(component: Component) {
         const element = (() => {
+            // const bounds = component.bounds;
             switch (component.type) {
                 case ("textbox"):
                     return <TextBox  {...component} />
                 case ("box"):
-                    return <rect {...component} />
+                    return <Box {...component} />
                 case "image":
-                    return <image {...component} />
+                    return <Image {...component} />
                 case ("ellipse"):
-                    const rx = component.width / 2;
-                    const ry = component.height / 2;
-                    return <ellipse {...component} cx={component.x + rx} cy={component.y + ry} rx={rx} ry={ry} />
-
+                    return <Ellipse {...component} />
+                case ("speech"):
+                    return <Speech {...component} />
             }
         })();
         return <g onMouseDown={(e) => select(component.id, e)} key={component.id}>{element}</g>
@@ -87,15 +90,14 @@ function Canvas() {
         mouseUpHandlerRef.current?.(e);
     }
 
-    function handleMouseDown(e: React.MouseEvent) {
-        console.log("hello");
+    function handleMouseDown() {
         deselect();
     }
 
     return (
         <CanvasContext.Provider value={{ select, setSelected, selected, canvasRef, toSVGSpace, registerHandler, clearHandler }}>
             <div className="w-[80vw] h-[80vh] mx-[10vw] my-[10vh] relative" onMouseDownCapture={handleMouseDownCapture} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseDown={handleMouseDown}>
-                <Overlay ref={dragHandlerRef} />
+                <Overlay scene={scene} ref={dragHandlerRef} />
                 <svg id="main" className="w-full h-full" viewBox="0 0 1920 1080" ref={canvasRef}>
                     <rect x="0" y="0" width="1920" height="1080" fill="black" />
                     {components}

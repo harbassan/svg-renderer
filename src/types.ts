@@ -1,23 +1,45 @@
-export type Component = BoxComponent | TextBoxComponent | ImageComponent | EllipseComponent;
+export type Component = BoxComponent | TextBoxComponent | ImageComponent | EllipseComponent | SpeechComponent;
+
+export type Scene = { components: Record<string, Component> };
+
+export interface Vec2 {
+    x: number;
+    y: number;
+}
+
+export interface Bounds {
+    verts: Vec2[];
+    rotation?: number;
+}
+
+export interface RelativeBounds {
+    x: number,
+    y: number,
+    height: number,
+    width: number,
+}
 
 export interface ImageComponent {
     id: string;
     type: "image";
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    bounds: Bounds;
     href: string;
     preserveAspectRatio: string;
+}
+
+export interface SpeechComponent {
+    id: string;
+    type: "speech";
+    bounds: Bounds;
+    fill: HexString;
+    stroke: HexString;
+    strokeWidth: number;
 }
 
 export interface BoxComponent {
     id: string;
     type: "box";
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    bounds: Bounds;
     fill: HexString;
     stroke: HexString;
     strokeWidth: number;
@@ -26,10 +48,7 @@ export interface BoxComponent {
 export interface EllipseComponent {
     id: string;
     type: "ellipse";
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    bounds: Bounds;
     fill: HexString;
     stroke: HexString;
     strokeWidth: number;
@@ -38,15 +57,12 @@ export interface EllipseComponent {
 export interface TextBoxComponent {
     id: string;
     type: "textbox";
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    bounds: Bounds;
     content: MinifiedTextShape;
     color: HexString;
     padding: number;
     fill: HexString;
-    strokeColor: HexString;
+    stroke: HexString;
     strokeWidth: number;
 }
 
@@ -58,10 +74,7 @@ interface MinifiedTextShape {
 
 export interface TextShape extends MinifiedTextShape {
     id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    bounds: RelativeBounds;
 }
 
 export interface TextBlock {

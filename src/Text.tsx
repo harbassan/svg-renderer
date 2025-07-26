@@ -88,7 +88,7 @@ function parseBlock(component: TextShape, block: TextBlock) {
             const addedWidth = i == 0 ? measure(word) : measure(` ${word}`);
             const newWidth = lineWidth + lineSpanWidth + addedWidth;
 
-            if (newWidth > component.width) {
+            if (newWidth > component.bounds.width) {
                 line.push({ text: lineSpan.join(" "), style, width: lineSpanWidth, start: lineWidth });
                 blockLines.push(line);
                 line = [];
@@ -177,12 +177,14 @@ function Text(component: TextShape) {
     const { toSVGSpace, registerHandler, clearHandler, setSelected } = useContext(CanvasContext);
     const [selection, setSelection] = useState<Selection>({ start: null, end: null })
 
+    const { bounds } = component;
+
     const blocks = buildBlocks(component);
     const contentHeight = blocks.reduce((total, block) => total + block.height, 0);
 
     function parseHit(global: { x: number, y: number }) {
-        const x = global.x - component.x;
-        const y = global.y - component.y;
+        const x = global.x - bounds.x;
+        const y = global.y - bounds.y;
 
         const blockI = scanBlocks(blocks, y);
         if (blockI == undefined) return null;
@@ -228,7 +230,7 @@ function Text(component: TextShape) {
         return blocks.map((block, i) => (
             <g key={i}>
                 {block.lines.map((line, j) => (
-                    <text key={j} x={component.x} y={component.y + block.start + (j + 1) * block.style.lineHeight}>
+                    <text key={j} x={bounds.x} y={bounds.y + block.start + (j + 1) * block.style.lineHeight}>
                         {line.map((span, k) => {
                             const derived = squash(block.style, span.style);
                             return <tspan key={k} style={buildStyle(derived)}>{span.text}</tspan>
@@ -255,7 +257,7 @@ function Text(component: TextShape) {
                     const containsEnd = i === end.blockI && j === end.lineI && k === end.spanI;
                     const { x, width } = generateHighlightSegment(start, end, line[k], containsStart, containsEnd);
                     highlights.push(
-                        <rect x={component.x + x} width={width} y={component.y + block.start + j * block.style.lineHeight} height={block.style.lineHeight} fill="#0000ff" />
+                        <rect x={bounds.x + x} width={width} y={bounds.y + block.start + j * block.style.lineHeight} height={block.style.lineHeight} fill="#0000ff" />
                     );
                     if (containsEnd) return highlights;
                 }
@@ -270,15 +272,15 @@ function Text(component: TextShape) {
         const block = blocks[position.blockI];
         const span = block.lines[position.lineI][position.spanI];
         setFont(span.style);
-        const x = component.x + span.start + measure(span.text.slice(0, position.charI));
-        const y = component.y + block.start + position.lineI * block.style.lineHeight;
+        const x = bounds.x + span.start + measure(span.text.slice(0, position.charI));
+        const y = bounds.y + block.start + position.lineI * block.style.lineHeight;
 
         return <rect x={x} y={y} width={2} height={block.style.lineHeight} fill="white" />
     }
 
     return (
         <g className="select-none" onMouseDown={handleMouseDown}>
-            <rect x={component.x} y={component.y} width={component.width} height={contentHeight} opacity={0} />
+            <rect x={bounds.x} y={bounds.y} width={bounds.width} height={contentHeight} opacity={0} />
             {generateHighlight()}
             {buildGroups(blocks)}
             {generateCursor()}

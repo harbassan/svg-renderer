@@ -1,87 +1,32 @@
+import type { Bounds, Scene } from "./types";
+import ArbitraryHandle from "./ArbitraryHandle";
+import ConstrainedHandle from "./ConstrainedHandle";
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
-import useScene from "./useScene";
-import { modifyComponent } from "./sceneCache";
-
-interface Position {
-    x: number;
-    y: number;
-}
-
-interface Bounding extends Position {
-    w: number;
-    h: number;
-}
-
-export interface DragHandlerRef {
-    startDrag: (e: MouseEvent, id: string) => void;
-}
+import { getBoxCenter } from "./util";
 
 interface Props {
-    bounds: Bounding;
-    setBounds: React.Dispatch<React.SetStateAction<Bounding>>;
+    scene: Scene,
+    setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
     isTransforming: React.RefObject<boolean>;
 }
 
-const DragHandles = ({ bounds, setBounds, isTransforming }: Props) => {
-    const { selected, toSVGSpace, clearHandler, registerHandler } = useContext(CanvasContext);
-    const { scene } = useScene();
+const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
+    const { selected } = useContext(CanvasContext);
 
-    const component = scene?.components[selected];
+    const center = getBoxCenter(scene?.components[selected].bounds.verts);
 
-    function calculateBounds(cursor: Position, handle_x: number, handle_y: number) {
-        const n_bounds: Partial<Bounding> = {};
-        if (handle_y === 0) {
-            n_bounds.y = cursor.y;
-            n_bounds.h = bounds.h + bounds.y - cursor.y;
-        } else if (handle_y === 1) {
-            n_bounds.h = cursor.y - bounds.y;
-        }
-        if (handle_x === 0) {
-            n_bounds.x = cursor.x;
-            n_bounds.w = bounds.w + bounds.x - cursor.x;
-        } else if (handle_x === 1) {
-            n_bounds.w = cursor.x - bounds.x;
-        }
-        return n_bounds;
-    }
+    return <>
+        <ArbitraryHandle x={0} y={0} scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+        <ArbitraryHandle x={1} y={0} scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+        <ArbitraryHandle x={1} y={1} scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+        <ArbitraryHandle x={0} y={1} scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
 
-    function endResize(handle_x: number, handle_y: number, event: React.MouseEvent) {
-        clearHandler("mousemove");
-        clearHandler("mouseup");
-        const position = toSVGSpace(event.clientX, event.clientY);
-        const n_bounds = calculateBounds(position, handle_x, handle_y);
-        modifyComponent(selected, { x: n_bounds.x, y: n_bounds.y, width: n_bounds.w, height: n_bounds.h });
-        isTransforming.current = false;
-    }
-
-    function updateResize(handle_x: number, handle_y: number, event: React.MouseEvent) {
-        isTransforming.current = true;
-        const position = toSVGSpace(event.clientX, event.clientY);
-        const n_bounds = calculateBounds(position, handle_x, handle_y);
-        setBounds(prev => ({ ...prev, ...n_bounds }));
-    }
-
-    function startResize(handle_x: number, handle_y: number) {
-        registerHandler("mousemove", (e: React.MouseEvent) => updateResize(handle_x, handle_y, e));
-        registerHandler("mouseup", (e: React.MouseEvent) => endResize(handle_x, handle_y, e));
-    }
-
-    const handles = [];
-
-    for (let i = 0; i <= 1; i += 0.5) {
-        for (let j = 0; j <= 1; j += 0.5) {
-            if (i === 0.5 && j === 0.5) continue;
-            const direction = `${["n", "", "s"][j * 2]}${["w", "", "e"][i * 2]}-resize`
-            handles.push(
-                <g onMouseDown={() => startResize(i, j)} className="pointer-events-auto" style={{ cursor: direction }}>
-                    <rect key={`${i},${j}`} x={component.x - 5 + i * component.width} y={component.y - 5 + j * component.height} width={10} height={10} fill="blue" />
-                </g>
-            )
-        }
-    }
-
-    return handles;
+        <ConstrainedHandle x={center.x} y={0} constraint="y" scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+        <ConstrainedHandle x={center.x} y={1} constraint="y" scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+        <ConstrainedHandle x={0} y={center.y} constraint="x" scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+        <ConstrainedHandle x={1} y={center.y} constraint="x" scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+    </>;
 };
 
 export default DragHandles;
