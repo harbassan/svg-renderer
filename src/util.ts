@@ -1,9 +1,14 @@
 import type { RelativeBounds, Vec2 } from "./types";
 
 type Degree = number;
+type Radian = number;
 
 function rad(angle: Degree) {
     return angle / 360 * 2 * Math.PI;
+}
+
+export function deg(angle: Radian) {
+    return angle / (2 * Math.PI) * 360;
 }
 
 export function add(v1: Vec2, v2: Vec2) {
