@@ -24,6 +24,7 @@ let scene = {
                     { x: 600, y: 400 },
                     { x: 1000, y: 500 },
                 ],
+                rotation: 30,
             },
             fill: "yellow",
         },
