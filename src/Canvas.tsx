@@ -8,6 +8,24 @@ import Speech from "./Speech";
 import Ellipse from "./Ellipse";
 import Box from "./Box";
 import Image from "./Image";
+import Line from "./Line";
+
+function resolve(component: Component) {
+    switch (component.type) {
+        case ("textbox"):
+            return <TextBox  {...component} />
+        case ("box"):
+            return <Box {...component} />
+        case "image":
+            return <Image {...component} />
+        case ("ellipse"):
+            return <Ellipse {...component} />
+        case ("speech"):
+            return <Speech {...component} />
+        case ("line"):
+            return <Line {...component} />
+    }
+}
 
 function Canvas() {
     const [selected, setSelected] = useState<string>("");
@@ -20,6 +38,8 @@ function Canvas() {
     const mouseUpHandlerRef = useRef<((e: React.MouseEvent) => void) | null>(null);
     const mouseDownCaptureHandlerRef = useRef<((e: React.MouseEvent) => void) | null>(null);
 
+    if (!scene) return <></>;
+
     function select(id: string, e: React.MouseEvent) {
         e.stopPropagation();
         setSelected(id);
@@ -30,29 +50,6 @@ function Canvas() {
         setSelected("");
     }
 
-    if (!scene) {
-        return <></>;
-    }
-
-    function resolve(component: Component) {
-        const element = (() => {
-            // const bounds = component.bounds;
-            switch (component.type) {
-                case ("textbox"):
-                    return <TextBox  {...component} />
-                case ("box"):
-                    return <Box {...component} />
-                case "image":
-                    return <Image {...component} />
-                case ("ellipse"):
-                    return <Ellipse {...component} />
-                case ("speech"):
-                    return <Speech {...component} />
-            }
-        })();
-        return <g onMouseDown={(e) => select(component.id, e)} key={component.id}>{element}</g>
-    }
-
     function toSVGSpace(cx: number, cy: number) {
         const boundingRect = canvasRef.current?.children[0];
         if (!boundingRect) return { x: 0, y: 0 };
@@ -61,10 +58,6 @@ function Canvas() {
         const y = ((cy - top) / height) * 1080;
         return { x, y }
     }
-
-    const components = Object.values(scene.components as Component[]).map(component => {
-        return resolve(component);
-    })
 
     function clearHandler(event: string) {
         if (event === "mousemove") mouseMoveHandlerRef.current = null;
@@ -93,6 +86,13 @@ function Canvas() {
     function handleMouseDown() {
         deselect();
     }
+
+    function renderComponent(component: Component) {
+        const element = resolve(component);
+        return <g onMouseDown={(e) => select(component.id, e)} key={component.id}>{element}</g>
+    }
+
+    const components = Object.values(scene.components).map(renderComponent);
 
     return (
         <CanvasContext.Provider value={{ select, setSelected, selected, canvasRef, toSVGSpace, registerHandler, clearHandler }}>

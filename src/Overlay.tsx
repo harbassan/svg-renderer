@@ -8,6 +8,8 @@ import Box from "./Box";
 import { subtract, translate } from "./util";
 import Speech from "./Speech";
 import ArbitraryHandle from "./ArbitraryHandle";
+import Line from "./Line";
+import LineHandles from "./LineHandles";
 
 export interface DragHandlerRef {
     startDrag: (e: MouseEvent, id: string) => void;
@@ -15,16 +17,14 @@ export interface DragHandlerRef {
 
 function resolve(component: Component, bounds: Bounds) {
     switch (component.type) {
-        case ("image"):
-        case ("box"):
-        case ("textbox"):
-            return <Box {...component} type="box" bounds={bounds} fill="none" stroke="green" strokeWidth={2} />;
         case ("ellipse"):
             return <Ellipse {...component} bounds={bounds} fill="none" stroke="green" strokeWidth={2} />;
         case ("speech"):
             return <Speech {...component} bounds={bounds} fill="none" stroke="green" strokeWidth={2} />
+        case ("line"):
+            return <Line {...component} bounds={bounds} stroke="green" strokeWidth={2} />
         default:
-            return <></>;
+            return <Box {...component} type="box" bounds={bounds} fill="none" stroke="green" strokeWidth={2} />;
     };
 }
 
@@ -32,7 +32,7 @@ const Overlay = ({ scene, ref }: { scene: Scene, ref: React.Ref<DragHandlerRef> 
     const { selected, toSVGSpace, registerHandler, clearHandler } = useContext(CanvasContext);
     const component = scene?.components[selected];
 
-    const [bounds, setBounds] = useState<Bounds>();
+    const [bounds, setBounds] = useState<Bounds>({ verts: [], rotation: 0 });
 
     const offset = useRef<Vec2>({ x: 0, y: 0 });
     const isTransforming = useRef<boolean>(false);
@@ -71,16 +71,27 @@ const Overlay = ({ scene, ref }: { scene: Scene, ref: React.Ref<DragHandlerRef> 
 
     useImperativeHandle(ref, () => ({ startDrag }));
 
+    function resolveHandles() {
+        switch (component.type) {
+            case ("speech"):
+                return <>
+                    <DragHandles scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+                    <ArbitraryHandle x={2} y={2} scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
+                </>;
+            case ("line"):
+                return <LineHandles scene={scene} setBounds={setBounds} isTransforming={isTransforming} />;
+            default:
+                return <DragHandles scene={scene} setBounds={setBounds} isTransforming={isTransforming} />;
+        };
+    }
+
     return (
         <svg id="overlay" className="w-full h-full absolute pointer-events-none" viewBox="0 0 1920 1080">
-            {component && bounds &&
-                <>
-                    <Box id="bounding-box" type="box" bounds={component.bounds} fill="none" stroke="blue" strokeWidth={2} />
-                    <DragHandles scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
-                    {component.type === "speech" && <ArbitraryHandle x={2} y={2} scene={scene} setBounds={setBounds} isTransforming={isTransforming} />}
-                    {isTransforming.current && bounds && resolve(component, bounds)}
-                </>
-            }
+            {component && <>
+                <Box id="bounding-box" type="box" bounds={component.bounds} fill="none" stroke="blue" strokeWidth={2} />
+                {isTransforming.current && bounds && resolve(component, bounds)}
+                {resolveHandles()}
+            </>}
         </svg >
     );
 };

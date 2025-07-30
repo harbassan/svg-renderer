@@ -16,6 +16,19 @@ let scene = {
             stroke: "#ffffffaa",
             strokeWidth: 10,
         },
+        "126123": {
+            id: "126123",
+            type: "line",
+            bounds: {
+                verts: [
+                    { x: 300, y: 900 },
+                    { x: 800, y: 1000 },
+                ],
+            },
+            stroke: "#ff00ffaa",
+            strokeWidth: 10,
+        },
+
         "123122": {
             id: "123122",
             type: "ellipse",

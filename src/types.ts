@@ -1,4 +1,4 @@
-export type Component = BoxComponent | TextBoxComponent | ImageComponent | EllipseComponent | SpeechComponent;
+export type Component = BoxComponent | TextBoxComponent | ImageComponent | EllipseComponent | SpeechComponent | LineComponent;
 
 export type Scene = { components: Record<string, Component> };
 
@@ -41,6 +41,14 @@ export interface BoxComponent {
     type: "box";
     bounds: Bounds;
     fill: HexString;
+    stroke: HexString;
+    strokeWidth: number;
+}
+
+export interface LineComponent {
+    id: string;
+    type: "line";
+    bounds: Bounds;
     stroke: HexString;
     strokeWidth: number;
 }
