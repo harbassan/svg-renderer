@@ -8,7 +8,7 @@ function Ellipse(component: EllipseComponent) {
     const center = getBoxCenter(verts);
     const radius = mutate(subtract(center, verts[0]), Math.abs);
     let anchors = [{ x: verts[0].x, y: center.y }, { x: verts[1].x, y: center.y }];
-    if (bounds.rotation) anchors = rotateMany(anchors, center, bounds.rotation);
+    anchors = rotateMany(anchors, center, bounds.rotation);
 
     const d = [
         `M${anchors[0].x} ${anchors[0].y}`,

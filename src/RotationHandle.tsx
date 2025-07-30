@@ -45,13 +45,8 @@ const RotationHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
         registerHandler("mouseup", (e: React.MouseEvent) => endResize(e));
     }
 
-    let initial = { x, y: y };
-    let point = { x, y: y - 40 };
-
-    if (bounds.rotation) {
-        initial = rotate(initial, center, bounds.rotation);
-        point = rotate(point, center, bounds.rotation);
-    }
+    const initial = rotate({ x, y: y }, center, bounds.rotation);
+    const point = rotate({ x, y: y - 40 }, center, bounds.rotation);
 
     return (
         <g onMouseDown={startResize} className="pointer-events-auto" style={{ cursor: "crosshair" }}>

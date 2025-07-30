@@ -1,4 +1,4 @@
-import { addScalar, constructPartialPath, divide, expandBoxVerts, getBoxCenter, getRelativeBounds, mutate, scale, subtract } from "./util";
+import { addScalar, constructPartialPath, divide, expandBoxVerts, getBoxCenter, getRelativeBounds, mutate, rotateMany, scale, subtract } from "./util";
 import type { SpeechComponent, Vec2 } from "./types";
 
 interface Segment {
@@ -15,6 +15,8 @@ function clamp(value: Vec2, min: number, max: number) {
 function Speech(component: SpeechComponent) {
     const { bounds } = component;
 
+    const center = getBoxCenter(bounds.verts);
+
     function getSegment() {
         const relative = subtract(bounds.verts[2], getBoxCenter(bounds.verts));
         const dims = mutate(subtract(bounds.verts[1], bounds.verts[0]), Math.abs);
@@ -30,7 +32,7 @@ function Speech(component: SpeechComponent) {
     }
 
     function constructPath() {
-        const expanded = expandBoxVerts(bounds.verts);
+        const expanded = rotateMany(expandBoxVerts(bounds.verts), center, bounds.rotation);
         const segment = getSegment();
         const tail = constructTail(segment);
 
@@ -39,7 +41,6 @@ function Speech(component: SpeechComponent) {
             + tail
             + constructPartialPath(expanded.slice(segment.sector + 1)) + " Z"
         );
-
     }
 
     // TODO: improve this logic
@@ -64,7 +65,8 @@ function Speech(component: SpeechComponent) {
             tailPoints[0] = { x: relative.x, y: (seg.grid.y + 1) * segSizeY + relative.y };
         }
 
-        return constructPartialPath([tailPoints[0], bounds.verts[2], tailPoints[1]]);
+        const verts = rotateMany([tailPoints[0], bounds.verts[2], tailPoints[1]], center, bounds.rotation);
+        return constructPartialPath(verts);
     }
 
     return (

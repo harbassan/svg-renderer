@@ -4,8 +4,7 @@ import type { BoxComponent } from "./types";
 function Box(component: BoxComponent) {
     const { bounds } = component;
 
-    let verts = expandBoxVerts(bounds.verts);
-    if (bounds.rotation) verts = rotateMany(verts, getBoxCenter(bounds.verts), bounds.rotation);
+    const verts = rotateMany(expandBoxVerts(bounds.verts), getBoxCenter(bounds.verts), bounds.rotation);
     const path = constructPath(verts);
 
     return <path d={path} {...component} />;

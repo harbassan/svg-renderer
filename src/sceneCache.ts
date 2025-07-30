@@ -37,6 +37,7 @@ let scene = {
                     { x: 1600, y: 500 },
                     { x: 1800, y: 700 },
                 ],
+                rotation: 30,
             },
             fill: "white",
             stroke: "#00ff00",

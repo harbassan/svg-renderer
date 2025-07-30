@@ -36,8 +36,7 @@ const ArbitraryHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
     function endResize(event: React.MouseEvent) {
         clearHandler("mousemove");
         clearHandler("mouseup");
-        let position = toSVGSpace(event.clientX, event.clientY);
-        if (bounds.rotation) position = rotate(position, center, -bounds.rotation);
+        const position = rotate(toSVGSpace(event.clientX, event.clientY), center, -bounds.rotation);
         const newVerts = correct(modifyVerts(verts, x, y, position));
         modifyComponentBounds(selected, { verts: newVerts });
         isTransforming.current = false;
@@ -45,8 +44,7 @@ const ArbitraryHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
 
     function updateResize(event: React.MouseEvent) {
         isTransforming.current = true;
-        let position = toSVGSpace(event.clientX, event.clientY);
-        if (bounds.rotation) position = rotate(position, center, -bounds.rotation);
+        const position = rotate(toSVGSpace(event.clientX, event.clientY), center, -bounds.rotation);
         const newVerts = correct(modifyVerts(verts, x, y, position));
         setBounds(prev => ({ ...prev, verts: newVerts }));
     }
@@ -57,8 +55,7 @@ const ArbitraryHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
         registerHandler("mouseup", (e: React.MouseEvent) => endResize(e));
     }
 
-    let point = { x: verts[x].x, y: verts[y].y };
-    if (bounds.rotation) point = rotate(point, getBoxCenter(verts), bounds.rotation);
+    const point = rotate({ x: verts[x].x, y: verts[y].y }, getBoxCenter(verts), bounds.rotation);
 
     return (
         <g onMouseDown={startResize} className="pointer-events-auto" style={{ cursor: "crosshair" }}>

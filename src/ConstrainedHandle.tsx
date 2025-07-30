@@ -38,8 +38,7 @@ const ConstrainedHandle = ({ x, y, constraint, scene, setBounds, isTransforming 
     function endResize(event: React.MouseEvent) {
         clearHandler("mousemove");
         clearHandler("mouseup");
-        let position = toSVGSpace(event.clientX, event.clientY);
-        if (bounds.rotation) position = rotate(position, center, -bounds.rotation);
+        const position = rotate(toSVGSpace(event.clientX, event.clientY), center, -bounds.rotation);
         const newVerts = correct(modifyVerts(verts, bound, position, constraint));
         modifyComponentBounds(selected, { verts: newVerts });
         isTransforming.current = false;
@@ -47,8 +46,7 @@ const ConstrainedHandle = ({ x, y, constraint, scene, setBounds, isTransforming 
 
     function updateResize(event: React.MouseEvent) {
         isTransforming.current = true;
-        let position = toSVGSpace(event.clientX, event.clientY);
-        if (bounds.rotation) position = rotate(position, center, -bounds.rotation);
+        const position = rotate(toSVGSpace(event.clientX, event.clientY), center, -bounds.rotation);
         const newVerts = correct(modifyVerts(verts, bound, position, constraint));
         setBounds(prev => ({ ...prev, verts: newVerts }));
     }
@@ -60,7 +58,7 @@ const ConstrainedHandle = ({ x, y, constraint, scene, setBounds, isTransforming 
     }
 
     let point = { x: constraint === "x" ? verts[x].x : x, y: constraint === "y" ? verts[y].y : y };
-    if (bounds.rotation) point = rotate(point, getBoxCenter(verts), bounds.rotation);
+    point = rotate(point, getBoxCenter(verts), bounds.rotation);
 
     return (
         <g onMouseDown={startResize} className="pointer-events-auto" style={{ cursor: "crosshair" }}>

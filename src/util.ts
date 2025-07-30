@@ -36,6 +36,7 @@ export function divide(v1: Vec2, v2: Vec2) {
 }
 
 export function rotate(v: Vec2, origin: Vec2, angle: Degree) {
+    if (!angle) return v;
     const relative = subtract(v, origin);
     const cos = Math.cos(rad(angle));
     const sin = Math.sin(rad(angle));
@@ -46,6 +47,7 @@ export function rotate(v: Vec2, origin: Vec2, angle: Degree) {
 }
 
 export function rotateMany(verts: Vec2[], origin: Vec2, angle: Degree) {
+    if (!angle) return verts;
     const cos = Math.cos(rad(angle));
     const sin = Math.sin(rad(angle));
     return verts.map(point => {

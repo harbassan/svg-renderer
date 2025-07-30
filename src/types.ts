@@ -9,7 +9,7 @@ export interface Vec2 {
 
 export interface Bounds {
     verts: Vec2[];
-    rotation?: number;
+    rotation: number;
 }
 
 export interface RelativeBounds {
