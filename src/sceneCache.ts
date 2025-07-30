@@ -49,6 +49,7 @@ let scene = {
                     { x: 400, y: 200 },
                     { x: 800, y: 400 },
                 ],
+                rotation: 30,
             },
             href: "https://i.scdn.co/image/ab67616d00001e024738aa171569052376f162fe",
             preserveAspectRatio: "none",
