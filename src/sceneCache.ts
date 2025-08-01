@@ -1,3 +1,4 @@
+import { v4 } from "uuid";
 import type { Bounds } from "./types";
 
 let scene = {
@@ -208,4 +209,16 @@ export function modifyComponentBounds(id: string, bounds: Partial<Bounds>) {
     scene = { ...scene };
 
     emitEvent("update_component", { scene });
+}
+
+export function createComponent(type: string, bounds: Bounds) {
+    const uuid = v4();
+
+    scene.components[uuid] = { id: uuid, type, bounds: bounds, fill: "#ffffff", stroke: "#ffffff", strokeWidth: 1 };
+
+    scene = { ...scene };
+
+    emitEvent("update_component", { scene });
+
+    return uuid;
 }

@@ -1,0 +1,14 @@
+.actions button {
+    background-color: black;
+    color: white;
+    border-radius: 5px;
+    padding: 2px 10px;
+}
+
+.actions {
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+    position: absolute;
+    top: 0;
+}

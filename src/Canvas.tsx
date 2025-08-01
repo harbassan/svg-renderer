@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import CanvasContext from "./CanvasContext";
 import useScene from "./useScene";
 import Overlay, { type DragHandlerRef } from "./Overlay";
@@ -9,6 +9,8 @@ import Ellipse from "./Ellipse";
 import Box from "./Box";
 import Image from "./Image";
 import Line from "./Line";
+import CreateOverlay from "./CreateOverlay";
+import AppContext from "./AppContext";
 
 function resolve(component: Component) {
     switch (component.type) {
@@ -30,6 +32,8 @@ function resolve(component: Component) {
 function Canvas() {
     const [selected, setSelected] = useState<string>("");
     const scene = useScene();
+
+    const { mode } = useContext(AppContext);
 
     const dragHandlerRef = useRef<DragHandlerRef>(null);
     const canvasRef = useRef<SVGSVGElement | null>(null);
@@ -97,7 +101,10 @@ function Canvas() {
     return (
         <CanvasContext.Provider value={{ select, setSelected, selected, canvasRef, toSVGSpace, registerHandler, clearHandler }}>
             <div className="w-[80vw] h-[80vh] mx-[10vw] my-[10vh] relative" onMouseDownCapture={handleMouseDownCapture} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseDown={handleMouseDown}>
-                <Overlay scene={scene} ref={dragHandlerRef} />
+                {mode === "create" ?
+                    <CreateOverlay />
+                    : <Overlay scene={scene} ref={dragHandlerRef} />
+                }
                 <svg id="main" className="w-full h-full" viewBox="0 0 1920 1080" ref={canvasRef}>
                     <rect x="0" y="0" width="1920" height="1080" fill="black" />
                     {components}
