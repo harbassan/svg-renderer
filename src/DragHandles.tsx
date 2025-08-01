@@ -2,9 +2,9 @@ import type { Bounds, Scene } from "./types";
 import ArbitraryHandle from "./ArbitraryHandle";
 import ConstrainedHandle from "./ConstrainedHandle";
 import { useContext } from "react";
-import CanvasContext from "./CanvasContext";
 import { getBoxCenter } from "./util";
 import RotationHandle from "./RotationHandle";
+import AppContext from "./AppContext";
 
 interface Props {
     scene: Scene,
@@ -13,7 +13,7 @@ interface Props {
 }
 
 const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
-    const { selected } = useContext(CanvasContext);
+    const { selected } = useContext(AppContext);
 
     const verts = scene?.components[selected].bounds.verts;
     const center = getBoxCenter(verts);

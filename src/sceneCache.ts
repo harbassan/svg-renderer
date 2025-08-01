@@ -1,5 +1,6 @@
 import { v4 } from "uuid";
 import type { Bounds } from "./types";
+import { translate } from "./util";
 
 let scene = {
     components: {
@@ -155,7 +156,7 @@ let scene = {
 interface listener {
     id: string;
     type: string;
-    callback: (details: Record<string, any>) => void;
+    callback: () => void;
 }
 
 const listeners = [] as Array<listener>;
@@ -165,17 +166,13 @@ export function registerListener(listener: listener) {
 }
 
 export function unregisterListener(id: string) {
-    const ix = listeners.findIndex(l => l.id == id);
-    if (ix != -1) {
-        listeners.splice(ix, 1);
-    }
+    const i = listeners.findIndex(l => l.id == id);
+    if (i != -1) listeners.splice(i, 1);
 }
 
-function emitEvent(type: string, details: Record<string, any>) {
+function emitEvent(type: string) {
     for (const listener of listeners) {
-        if (listener.type == type) {
-            listener.callback(details);
-        }
+        if (listener.type == type) listener.callback();
     }
 };
 
@@ -186,39 +183,48 @@ export function getScene() {
 export function modifyComponent(id: string, props: Record<string, any>) {
     const component = scene.components[id];
     if (!component) return;
-
-    for (const prop of Object.entries(props)) {
-        if (prop[1] != undefined) component[prop[0]] = prop[1];
-    }
-
+    const updates = Object.fromEntries(
+        Object.entries(props).filter(([_, v]) => v !== undefined)
+    );
+    scene.components[id] = { ...component, ...updates };
     scene = { ...scene };
-
-    emitEvent("update_component", { scene });
+    emitEvent("update_component");
 }
 
 export function modifyComponentBounds(id: string, bounds: Partial<Bounds>) {
     const component = scene.components[id];
     if (!component) return;
-
-    const updates = {};
-    for (const prop of Object.entries(bounds)) {
-        if (prop[1] != undefined) updates[prop[0]] = prop[1];
-    }
+    const updates = Object.fromEntries(
+        Object.entries(bounds).filter(([_, v]) => v !== undefined)
+    );
     component.bounds = { ...component.bounds, ...updates };
-
     scene = { ...scene };
-
-    emitEvent("update_component", { scene });
+    emitEvent("update_component");
 }
 
-export function createComponent(type: string, bounds: Bounds) {
+function createComponent(props: Record<string, any>) {
     const uuid = v4();
+    scene.components[uuid] = { ...props, id: uuid };
+    return uuid;
+}
 
-    scene.components[uuid] = { id: uuid, type, bounds: bounds, fill: "#ffffff", stroke: "#ffffff", strokeWidth: 1 };
-
+export function createFromBounds(type: string, bounds: Bounds) {
+    const uuid = createComponent({ type, bounds: bounds, fill: "#ffffff", stroke: "#ffffff", strokeWidth: 1 })
     scene = { ...scene };
+    emitEvent("update_component");
+    return uuid;
+}
 
-    emitEvent("update_component", { scene });
+export function removeComponent(id: string) {
+    if (!scene.components[id]) return;
+    delete scene.components[id];
+    scene = { ...scene };
+    emitEvent("update_component");
+}
 
+export function duplicateComponent(id: string) {
+    const component = scene.components[id];
+    if (!component) return;
+    const uuid = createComponent({ ...component, bounds: { verts: translate(component.bounds.verts, { x: 10, y: 10 }), rotation: component.bounds.rotation } });
     return uuid;
 }

@@ -3,6 +3,7 @@ import CanvasContext from "./CanvasContext";
 import { modifyComponentBounds } from "./sceneCache";
 import type { Bounds, Scene, Vec2 } from "./types";
 import { deg, getBoxCenter, rotate, subtract } from "./util";
+import AppContext from "./AppContext";
 
 interface Props {
     x: number;
@@ -18,7 +19,8 @@ function getRotation(v: Vec2, origin: Vec2) {
 }
 
 const RotationHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
-    const { selected, toSVGSpace, clearHandler, registerHandler } = useContext(CanvasContext);
+    const { toSVGSpace, clearHandler, registerHandler } = useContext(CanvasContext);
+    const { selected } = useContext(AppContext);
 
     const bounds = scene?.components[selected].bounds;
     const center = getBoxCenter(bounds.verts);

@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import type { BaseTextStyle, TextBlock, TextShape } from "./types";
 import CanvasContext from "./CanvasContext";
+import AppContext from "./AppContext";
 
 const fallback: BaseTextStyle = {
     alignment: "center",
@@ -174,7 +175,8 @@ function generateHighlightSegment(startPosition: CursorPosition, endPosition: Cu
 let isSelecting = false;
 
 function Text(component: TextShape) {
-    const { toSVGSpace, registerHandler, clearHandler, setSelected } = useContext(CanvasContext);
+    const { toSVGSpace, registerHandler, clearHandler } = useContext(CanvasContext);
+    const { setSelected } = useContext(AppContext);
     const [selection, setSelection] = useState<Selection>({ start: null, end: null })
 
     const { bounds } = component;

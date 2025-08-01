@@ -5,8 +5,7 @@ import type { Bounds, Vec2 } from "./types";
 import Box from "./Box";
 import Speech from "./Speech";
 import Line from "./Line";
-import { createComponent } from "./sceneCache";
-import App from "./App";
+import { createFromBounds } from "./sceneCache";
 import AppContext from "./AppContext";
 
 function resolve(type: String, bounds: Bounds) {
@@ -23,8 +22,8 @@ function resolve(type: String, bounds: Bounds) {
 }
 
 const CreateOverlay = () => {
-    const { toSVGSpace, registerHandler, clearHandler, setSelected } = useContext(CanvasContext);
-    const { createType, setMode } = useContext(AppContext);
+    const { toSVGSpace, registerHandler, clearHandler } = useContext(CanvasContext);
+    const { createType, setMode, setSelected } = useContext(AppContext);
 
     const [verts, setVerts] = useState<Bounds["verts"]>([]);
 
@@ -46,7 +45,7 @@ const CreateOverlay = () => {
         clearHandler("mousemove");
         clearHandler("mouseup");
         const position = toSVGSpace(event.clientX, event.clientY);
-        const id = createComponent(createType, { verts: [offset.current, position], rotation: 0 });
+        const id = createFromBounds(createType, { verts: [offset.current, position], rotation: 0 });
         setSelected(id);
         setMode("normal");
         isTransforming.current = false;

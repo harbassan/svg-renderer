@@ -10,6 +10,7 @@ import Speech from "./Speech";
 import ArbitraryHandle from "./ArbitraryHandle";
 import Line from "./Line";
 import LineHandles from "./LineHandles";
+import AppContext from "./AppContext";
 
 export interface DragHandlerRef {
     startDrag: (e: MouseEvent, id: string) => void;
@@ -29,7 +30,8 @@ function resolve(component: Component, bounds: Bounds) {
 }
 
 const Overlay = ({ scene, ref }: { scene: Scene, ref: React.Ref<DragHandlerRef> }) => {
-    const { selected, toSVGSpace, registerHandler, clearHandler } = useContext(CanvasContext);
+    const { toSVGSpace, registerHandler, clearHandler } = useContext(CanvasContext);
+    const { selected } = useContext(AppContext);
     const component = scene?.components[selected];
 
     const [bounds, setBounds] = useState<Bounds>({ verts: [], rotation: 0 });

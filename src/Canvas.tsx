@@ -30,10 +30,9 @@ function resolve(component: Component) {
 }
 
 function Canvas() {
-    const [selected, setSelected] = useState<string>("");
     const scene = useScene();
 
-    const { mode } = useContext(AppContext);
+    const { mode, setSelected } = useContext(AppContext);
 
     const dragHandlerRef = useRef<DragHandlerRef>(null);
     const canvasRef = useRef<SVGSVGElement | null>(null);
@@ -99,7 +98,7 @@ function Canvas() {
     const components = Object.values(scene.components).map(renderComponent);
 
     return (
-        <CanvasContext.Provider value={{ select, setSelected, selected, canvasRef, toSVGSpace, registerHandler, clearHandler }}>
+        <CanvasContext.Provider value={{ select, canvasRef, toSVGSpace, registerHandler, clearHandler }}>
             <div className="w-[80vw] h-[80vh] mx-[10vw] my-[10vh] relative" onMouseDownCapture={handleMouseDownCapture} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseDown={handleMouseDown}>
                 {mode === "create" ?
                     <CreateOverlay />

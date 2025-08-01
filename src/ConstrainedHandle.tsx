@@ -3,6 +3,7 @@ import CanvasContext from "./CanvasContext";
 import { modifyComponentBounds } from "./sceneCache";
 import type { Bounds, Scene, Vec2 } from "./types";
 import { getBoxCenter, rotate, subtract, translate } from "./util";
+import AppContext from "./AppContext";
 
 interface Props {
     x: number;
@@ -20,7 +21,8 @@ function modifyVerts(verts: Vec2[], bound: number, v: Vec2, constraint: "x" | "y
 }
 
 const ConstrainedHandle = ({ x, y, constraint, scene, setBounds, isTransforming }: Props) => {
-    const { selected, toSVGSpace, clearHandler, registerHandler } = useContext(CanvasContext);
+    const { toSVGSpace, clearHandler, registerHandler } = useContext(CanvasContext);
+    const { selected } = useContext(AppContext);
 
     const bounds = scene?.components[selected].bounds;
     const verts = bounds.verts;
