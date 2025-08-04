@@ -154,6 +154,8 @@ let scene = {
     } as Record<string, any>,
 };
 
+window.scene = scene;
+
 interface listener {
     id: string;
     type: string;
@@ -209,8 +211,19 @@ function createComponent(props: Record<string, any>) {
     return uuid;
 }
 
+const defaults = {
+    textbox: { padding: 20, fill: "#ffffff00", content: { style: { textColor: "#ffffff" }, blocks: [{ spans: [{ text: "Nullum bonum textum substitutivum cogitare potui" }] }] } },
+    line: { stroke: "#ffffff", strokeWidth: 2 },
+    default: { fill: "#ffffff" }
+}
+
 export function createFromBounds(type: string, bounds: Bounds) {
-    const uuid = createComponent({ type, bounds: bounds, fill: "#ffffff", stroke: "#ffffff", strokeWidth: 1 })
+    let props;
+    if (type === "textbox") props = { type, bounds, ...defaults.textbox };
+    else if (type === "line") props = { type, bounds, ...defaults.line };
+    else props = { type, bounds, ...defaults.default };
+
+    const uuid = createComponent(props);
     scene = { ...scene };
     emitEvent("update_component");
     return uuid;
