@@ -1,4 +1,4 @@
-import { addScalar, clamp, constructPartialPath, divide, expandBoxVerts, getBoxCenter, getRelativeBounds, mutate, rotateMany, scale, subtract } from "./util";
+import { addScalar, clamp, constructPartialPath, divide, expandBoxVerts, getBoxCenter, getRelativeBounds, multiply, mutate, rotateMany, scale, subtract } from "./util";
 import type { SpeechComponent, Vec2 } from "./types";
 
 interface Segment {
@@ -14,10 +14,12 @@ function Speech(component: SpeechComponent) {
     const center = getBoxCenter(bounds.verts);
 
     function getSegment() {
-        const relative = subtract(bounds.verts[2], getBoxCenter(bounds.verts));
         const dims = mutate(subtract(bounds.verts[1], bounds.verts[0]), Math.abs);
+        const dir = divide(subtract(bounds.verts[1], bounds.verts[0]), dims);
+        const relative = multiply(subtract(bounds.verts[2], getBoxCenter(bounds.verts)), dir);
         const grid = clamp(mutate(addScalar(scale(divide(relative, dims), gridSize), gridSize / 2), Math.floor), 0, 4);
         const gradient = dims.y / dims.x;
+
 
         let sector;
         if (relative.y < - gradient * Math.abs(relative.x)) sector = 0;
@@ -30,6 +32,7 @@ function Speech(component: SpeechComponent) {
     function constructPath() {
         const expanded = rotateMany(expandBoxVerts(bounds.verts), center, bounds.rotation);
         const segment = getSegment();
+        console.log(segment);
         const tail = constructTail(segment);
 
         return (
@@ -39,27 +42,27 @@ function Speech(component: SpeechComponent) {
         );
     }
 
-    // TODO: improve this logic
     function constructTail(seg: Segment) {
-        const relative = getRelativeBounds(bounds.verts);
-        const segSizeX = relative.width / gridSize;
-        const segSizeY = relative.height / gridSize;
-        const { sector } = seg;
+        const segSize = scale(subtract(bounds.verts[1], bounds.verts[0]), 1 / gridSize);
+        const offset = bounds.verts[0];
+        const { sector, grid } = seg;
+        const corners = [
+            [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }],
+            [{ dx: 1, dy: 0 }, { dx: 1, dy: 1 }],
+            [{ dx: 1, dy: 1 }, { dx: 0, dy: 1 }],
+            [{ dx: 0, dy: 1 }, { dx: 0, dy: 0 }],
+        ];
 
-        let tailPoints = [];
-        if (sector === 0) {
-            tailPoints[0] = { x: seg.grid.x * segSizeX + relative.x, y: relative.y };
-            tailPoints[1] = { x: (seg.grid.x + 1) * segSizeX + relative.x, y: relative.y };
-        } else if (sector === 1) {
-            tailPoints[0] = { x: relative.x + relative.width, y: seg.grid.y * segSizeY + relative.y };
-            tailPoints[1] = { x: relative.x + relative.width, y: (seg.grid.y + 1) * segSizeY + relative.y };
-        } else if (sector == 2) {
-            tailPoints[1] = { x: seg.grid.x * segSizeX + relative.x, y: relative.y + relative.height };
-            tailPoints[0] = { x: (seg.grid.x + 1) * segSizeX + relative.x, y: relative.y + relative.height };
-        } else {
-            tailPoints[1] = { x: relative.x, y: seg.grid.y * segSizeY + relative.y };
-            tailPoints[0] = { x: relative.x, y: (seg.grid.y + 1) * segSizeY + relative.y };
-        }
+        const tailPoints = [
+            {
+                x: (grid.x + corners[sector][0].dx) * segSize.x + offset.x,
+                y: (grid.y + corners[sector][0].dy) * segSize.y + offset.y
+            },
+            {
+                x: (grid.x + corners[sector][1].dx) * segSize.x + offset.x,
+                y: (grid.y + corners[sector][1].dy) * segSize.y + offset.y
+            }
+        ];
 
         const verts = rotateMany([tailPoints[0], bounds.verts[2], tailPoints[1]], center, bounds.rotation);
         return constructPartialPath(verts);

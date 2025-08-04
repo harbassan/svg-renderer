@@ -11,6 +11,7 @@ import ArbitraryHandle from "./ArbitraryHandle";
 import Line from "./Line";
 import LineHandles from "./LineHandles";
 import AppContext from "./AppContext";
+import SpeechHandles from "./SpeechHandles";
 
 export interface DragHandlerRef {
     startDrag: (e: MouseEvent, id: string) => void;
@@ -76,10 +77,7 @@ const Overlay = ({ scene, ref }: { scene: Scene, ref: React.Ref<DragHandlerRef> 
     function resolveHandles() {
         switch (component.type) {
             case ("speech"):
-                return <>
-                    <DragHandles scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
-                    <ArbitraryHandle x={2} y={2} scene={scene} setBounds={setBounds} isTransforming={isTransforming} />
-                </>;
+                return <SpeechHandles scene={scene} setBounds={setBounds} isTransforming={isTransforming} />;
             case ("line"):
                 return <LineHandles scene={scene} setBounds={setBounds} isTransforming={isTransforming} />;
             default:
