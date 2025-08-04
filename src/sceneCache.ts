@@ -79,6 +79,7 @@ let scene = {
                     { x: 700, y: 500 },
                     { x: 1100, y: 900 },
                 ],
+                rotation: 30,
             },
             padding: 20,
             fill: "#00000000",

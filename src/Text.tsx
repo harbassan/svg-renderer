@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import type { BaseTextStyle, TextBlock, TextShape } from "./types";
 import CanvasContext from "./CanvasContext";
 import AppContext from "./AppContext";
+import { clamp1, constructPath, expandBoxVerts, rotate, rotateMany, subtract } from "./util";
 
 const fallback: BaseTextStyle = {
     alignment: "center",
@@ -83,19 +84,20 @@ function parseBlock(component: TextShape, block: TextBlock) {
         const words = span.text.split(" ");
         let lineSpan: string[] = [];
         let lineSpanWidth = 0;
+        const spaceWidth = measure(" ");
 
         for (let i = 0; i < words.length; i++) {
             const word = words[i];
-            const addedWidth = i == 0 ? measure(word) : measure(` ${word}`);
-            const newWidth = lineWidth + lineSpanWidth + addedWidth;
+            const wordWidth = measure(word);
+            const addedWidth = i ? wordWidth + spaceWidth : wordWidth;
 
-            if (newWidth > component.bounds.width) {
+            if (lineWidth + lineSpanWidth + addedWidth > component.bounds.width) {
                 line.push({ text: lineSpan.join(" "), style, width: lineSpanWidth, start: lineWidth });
                 blockLines.push(line);
                 line = [];
                 lineWidth = 0;
                 lineSpan = [word];
-                lineSpanWidth = measure(word);
+                lineSpanWidth = wordWidth;
             } else {
                 lineSpan.push(word);
                 lineSpanWidth += addedWidth;
@@ -160,16 +162,29 @@ function generateHighlightSegment(startPosition: CursorPosition, endPosition: Cu
         const x = measure(span.text.slice(0, startPosition.charI));
         const width = measure(span.text.slice(startPosition.charI, endPosition.charI));
         return { x: span.start + x, width };
-    }
-    if (containsStart) {
+    } if (containsStart) {
         const x = measure(span.text.slice(0, startPosition.charI));
         return { x: span.start + x, width: span.width - x };
-    }
-    if (containsEnd) {
+    } if (containsEnd) {
         const width = measure(span.text.slice(0, endPosition.charI));
         return { x: span.start, width };
     }
     return { x: span.start, width: span.width };
+}
+
+function buildGroups(blocks: Block[]) {
+    return blocks.map((block, i) => (
+        <g key={i}>
+            {block.lines.map((line, j) => (
+                <text key={j} x={0} y={block.start + (j + 1) * block.style.lineHeight}>
+                    {line.map((span, k) => {
+                        const derived = squash(block.style, span.style);
+                        return <tspan key={k} style={buildStyle(derived)}>{span.text}</tspan>
+                    })}
+                </text>
+            ))}
+        </g>
+    ));
 }
 
 let isSelecting = false;
@@ -180,35 +195,34 @@ function Text(component: TextShape) {
     const [selection, setSelection] = useState<Selection>({ start: null, end: null })
 
     const { bounds } = component;
+    const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
 
     const blocks = buildBlocks(component);
-    const contentHeight = blocks.reduce((total, block) => total + block.height, 0);
 
     function parseHit(global: { x: number, y: number }) {
-        const x = global.x - bounds.x;
-        const y = global.y - bounds.y;
+        const relative = subtract(rotate(global, center, -bounds.rotation), bounds);
 
-        const blockI = scanBlocks(blocks, y);
+        const blockI = scanBlocks(blocks, relative.y);
         if (blockI == undefined) return null;
 
         const block = blocks[blockI];
-        const lineI = Math.min(Math.max(Math.floor((y - block.start) / block.style.lineHeight), 0), block.lines.length - 1);
+        const lineI = clamp1(Math.floor((relative.y - block.start) / block.style.lineHeight), 0, block.lines.length - 1);
         const line = block.lines[lineI];
-        const spanI = scanLine(line, x);
-        const charI = scanSpan(line[spanI], x);
+        const spanI = scanLine(line, relative.x);
+        const charI = scanSpan(line[spanI], relative.x);
 
         return { blockI, lineI, spanI, charI };
     }
 
     function handleMouseDown(e: React.MouseEvent) {
         e.stopPropagation();
-        setSelected(component.id);
         registerHandler("mousemove", handleMouseMove);
         registerHandler("mouseup", handleMouseUp);
         registerHandler("mousedowncapture", handleMouseDownCapture);
-        isSelecting = true;
         const position = parseHit(toSVGSpace(e.clientX, e.clientY));
+        setSelected(component.id);
         setSelection({ start: position, end: null });
+        isSelecting = true;
     }
 
     function handleMouseDownCapture() {
@@ -228,67 +242,65 @@ function Text(component: TextShape) {
         clearHandler("mouseup");
     }
 
-    function buildGroups(blocks: Block[]) {
-        return blocks.map((block, i) => (
-            <g key={i}>
-                {block.lines.map((line, j) => (
-                    <text key={j} x={bounds.x} y={bounds.y + block.start + (j + 1) * block.style.lineHeight}>
-                        {line.map((span, k) => {
-                            const derived = squash(block.style, span.style);
-                            return <tspan key={k} style={buildStyle(derived)}>{span.text}</tspan>
-                        })}
-                    </text>
-                ))}
-            </g>
-        ));
+    function expandToPath(x: number, y: number, width: number, height: number) {
+        let verts = [{ x, y }, { x: x + width, y: y + height }];
+        verts = rotateMany(expandBoxVerts(verts), center, bounds.rotation);
+        return constructPath(verts);
     }
 
-    function generateHighlight() {
+    function Highlight() {
         if (selection.start == null || selection.end == null) return null;
         let { start, end } = selection;
-
         if (isEndBeforeStart(start, end)) [start, end] = [end, start];
 
         const highlights = [];
         for (let i = start.blockI; i <= end.blockI; i++) {
             const block = blocks[i];
-            for (let j = (i == start.blockI ? start.lineI : 0); j < block.lines.length; j++) {
+            const isStartBlock = i === start.blockI;
+            for (let j = (isStartBlock ? start.lineI : 0); j < block.lines.length; j++) {
                 const line = block.lines[j];
-                for (let k = (j == start.lineI && i == start.blockI ? start.spanI : 0); k < line.length; k++) {
-                    const containsStart = i === start.blockI && j === start.lineI && k === start.spanI;
-                    const containsEnd = i === end.blockI && j === end.lineI && k === end.spanI;
-                    const { x, width } = generateHighlightSegment(start, end, line[k], containsStart, containsEnd);
-                    highlights.push(
-                        <rect x={bounds.x + x} width={width} y={bounds.y + block.start + j * block.style.lineHeight} height={block.style.lineHeight} fill="#0000ff" />
-                    );
-                    if (containsEnd) return highlights;
+                const isStartLine = j === start.lineI;
+                for (let k = (isStartLine && isStartBlock ? start.spanI : 0); k < line.length; k++) {
+                    const isStart = isStartBlock && isStartLine && k === start.spanI;
+                    const isEnd = i === end.blockI && j === end.lineI && k === end.spanI;
+
+                    const { x, width } = generateHighlightSegment(start, end, line[k], isStart, isEnd);
+                    const y = bounds.y + block.start + j * block.style.lineHeight;
+                    const path = <path d={expandToPath(x + bounds.x, y, width, block.style.lineHeight)} fill="#0000ff" />;
+                    highlights.push(path);
+
+                    if (isEnd) return highlights;
                 }
             }
         }
     }
 
-    function generateCursor() {
+    function Cursor() {
         if (selection.start == null || selection.end) return null;
         const { start: position } = selection;
 
         const block = blocks[position.blockI];
         const span = block.lines[position.lineI][position.spanI];
         setFont(span.style);
+
         const x = bounds.x + span.start + measure(span.text.slice(0, position.charI));
         const y = bounds.y + block.start + position.lineI * block.style.lineHeight;
 
-        return <rect x={x} y={y} width={2} height={block.style.lineHeight} fill="white" />
+        const path = expandToPath(x, y, 2, block.style.lineHeight);
+        return <path d={path} fill="#ffffff" />;
     }
 
+    const transformation = `translate(${bounds.x + bounds.width / 2},${bounds.y + bounds.height / 2}) rotate(${bounds.rotation}) translate(${-bounds.width / 2},${-bounds.height / 2})`;
+
     return (
-        <g className="select-none" onMouseDown={handleMouseDown}>
-            <rect x={bounds.x} y={bounds.y} width={bounds.width} height={contentHeight} opacity={0} />
-            {generateHighlight()}
-            {buildGroups(blocks)}
-            {generateCursor()}
+        <g className="select-none" onMouseDown={handleMouseDown} >
+            <Highlight />
+            <g className="select-none" transform={transformation}>
+                {buildGroups(blocks)}
+            </g>
+            <Cursor />
         </g>
     );
-
 }
 
 export default Text;

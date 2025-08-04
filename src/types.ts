@@ -17,6 +17,7 @@ export interface RelativeBounds {
     y: number,
     height: number,
     width: number,
+    rotation: number,
 }
 
 export interface ImageComponent {

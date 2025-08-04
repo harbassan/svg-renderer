@@ -101,3 +101,11 @@ export function constructPath(verts: Vec2[]) {
     const partial = constructPartialPath(verts);
     return "M" + partial.slice(1) + " Z";
 }
+
+export function clamp(value: Vec2, min: number, max: number) {
+    return mutate(value, (val) => Math.max(Math.min(val, max), min));
+}
+
+export function clamp1(val: number, min: number, max: number) {
+    return Math.max(Math.min(val, max), min);
+}

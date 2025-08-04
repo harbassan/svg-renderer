@@ -15,6 +15,7 @@ function pad(verts: Vec2[], amount: number) {
 function TextBox(component: TextBoxComponent) {
     const { bounds, padding, content, id } = component;
     const relative = getRelativeBounds(pad(bounds.verts, padding));
+    relative.rotation = bounds.rotation;
 
     return (
         <g>

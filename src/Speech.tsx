@@ -1,4 +1,4 @@
-import { addScalar, constructPartialPath, divide, expandBoxVerts, getBoxCenter, getRelativeBounds, mutate, rotateMany, scale, subtract } from "./util";
+import { addScalar, clamp, constructPartialPath, divide, expandBoxVerts, getBoxCenter, getRelativeBounds, mutate, rotateMany, scale, subtract } from "./util";
 import type { SpeechComponent, Vec2 } from "./types";
 
 interface Segment {
@@ -7,10 +7,6 @@ interface Segment {
 }
 
 const gridSize = 5;
-
-function clamp(value: Vec2, min: number, max: number) {
-    return mutate(value, (val) => Math.max(Math.min(val, max), min));
-}
 
 function Speech(component: SpeechComponent) {
     const { bounds } = component;
