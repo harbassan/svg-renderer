@@ -266,7 +266,7 @@ function Text(component: TextShape) {
 
                     const { x, width } = generateHighlightSegment(start, end, line[k], isStart, isEnd);
                     const y = bounds.y + block.start + j * block.style.lineHeight;
-                    const path = <path d={expandToPath(x + bounds.x, y, width, block.style.lineHeight)} fill="#0000ff" />;
+                    const path = <path d={expandToPath(x + bounds.x - 1, y - 1, width + 1, block.style.lineHeight + 1)} fill="#0000ff" />;
                     highlights.push(path);
 
                     if (isEnd) return highlights;
