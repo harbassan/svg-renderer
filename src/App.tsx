@@ -35,6 +35,7 @@ function App() {
         <button onClick={() => switchCreate("ellipse")}>Create Ellipse</button>
         <button onClick={() => switchCreate("line")}>Create Line</button>
         <button onClick={() => switchCreate("textbox")}>Create TextBox</button>
+        <button onClick={() => switchCreate("speech")}>Create Speech</button>
         <button onClick={remove} >Delete Component</button>
         <button onClick={duplicate} >Dupe Component</button>
       </div >

@@ -7,6 +7,12 @@ import Speech from "./Speech";
 import Line from "./Line";
 import { createFromBounds } from "./sceneCache";
 import AppContext from "./AppContext";
+import { add, addScalar, multiply, mutate, scale, subtract } from "./util";
+
+function getTailVert(verts: Vec2[]) {
+    const dir = mutate(subtract(verts[1], verts[0]), val => val / Math.abs(val));
+    return add(verts[1], scale(dir, 20));
+}
 
 function resolve(type: String, bounds: Bounds) {
     switch (type) {
@@ -38,14 +44,18 @@ const CreateOverlay = () => {
     function updateDrag(event: React.MouseEvent) {
         isTransforming.current = true;
         const position = toSVGSpace(event.clientX, event.clientY);
-        setVerts([offset.current, position]);
+        let verts = [offset.current, position];
+        if (createType === "speech") verts.push(getTailVert(verts));
+        setVerts(verts);
     }
 
     function endDrag(event: React.MouseEvent) {
         clearHandler("mousemove");
         clearHandler("mouseup");
         const position = toSVGSpace(event.clientX, event.clientY);
-        const id = createFromBounds(createType, { verts: [offset.current, position], rotation: 0 });
+        let verts = [offset.current, position];
+        if (createType === "speech") verts.push(getTailVert(verts));
+        const id = createFromBounds(createType, { verts, rotation: 0 });
         setSelected(id);
         setMode("normal");
         isTransforming.current = false;
