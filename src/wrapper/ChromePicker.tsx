@@ -6,25 +6,23 @@ import { Chrome, type ColorResult } from "@uiw/react-color";
 function ChromePicker({ children, prop }: React.PropsWithChildren<{ prop: string }>) {
     const { selected } = useContext(AppContext);
 
-    const [color, setColor] = useState(getComponentProp(selected, prop));
+    const [color, setColor] = useState(getComponentProp(selected, prop) || "#ffffffff");
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         function handleClick(event: MouseEvent) {
-            console.log(ref.current);
             if (ref.current && !ref.current.contains(event.target as Node)) {
                 setOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClick, true);
-
         return () => document.removeEventListener("mousedown", handleClick, true);
     }, [])
 
     useEffect(() => {
         if (!selected) return;
-        setColor(getComponentProp(selected, prop));
+        setColor(getComponentProp(selected, prop) || "#ffffffff");
     }, [selected])
 
     function onChange(val: ColorResult) {

@@ -92,12 +92,14 @@ let scene = {
                     fontWeight: "normal",
                     lineHeight: 24 * 1.1,
                     fontSize: 24,
-                    textColor: "#ffffff"
+                    textColor: "#ffffff",
+                    alignment: "left",
+                    highlightColor: "#00000000"
                 },
                 blocks: [
                     {
                         id: "398457",
-                        alignment: "center",
+                        style: {},
                         spans: [
                             {
                                 text: "Hello from the ",
@@ -106,14 +108,14 @@ let scene = {
                                 text: "world below, I am the ruler of this place. These are my subjects.",
                                 style: {
                                     fontWeight: "bold",
-                                    textColor: "#ff0000"
+                                    textColor: "#ff0000",
+                                    highlightColor: "#330000"
                                 }
                             }
                         ]
                     },
                     {
                         id: "290834",
-                        alignment: "left",
                         style: {
                             lineHeight: 40,
                         },
@@ -135,7 +137,6 @@ let scene = {
                         ]
                     },
                     {
-                        alignment: "center",
                         style: {
                             fontFamily: "Georgia",
                             fontStyle: "italic",

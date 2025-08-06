@@ -7,7 +7,8 @@ import ChromePicker from './wrapper/ChromePicker';
 import NumberInput from './wrapper/NumberInput';
 import ToggleInput from './wrapper/ToggleInput';
 import FontInput from './wrapper/FontInput';
-import { ArrowDownNarrowWide, Baseline, Bold, CaseSensitive, CaseSensitiveIcon, Copy, Delete, Diameter, Italic, MessageSquare, PaintBucket, Pen, Pencil, Spline, Type, Underline, VectorSquare } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowDownNarrowWide, Baseline, Bold, CaseSensitive, CaseSensitiveIcon, Copy, Delete, Diameter, Highlighter, Italic, MessageSquare, PaintBucket, Pen, Pencil, Spline, Type, Underline, VectorSquare } from 'lucide-react';
+import MultiInput from './wrapper/MultiInput';
 
 function App() {
   const [selected, setSelected] = useState<string>("");
@@ -83,6 +84,15 @@ function App() {
                   <ChromePicker prop="content.style.textColor">
                     <span>A</span>
                   </ChromePicker>
+                  <ChromePicker prop="content.style.highlightColor">
+                    <Highlighter size={14} />
+                  </ChromePicker>
+                  |
+                  <MultiInput prop="content.style.alignment" options={["left", "center", "right"]} >
+                    <AlignLeft size={16} />
+                    <AlignCenter size={16} />
+                    <AlignRight size={16} />
+                  </MultiInput>
                   |
                   <ArrowDownNarrowWide size={18} />
                   <NumberInput prop="content.style.lineHeight" />
