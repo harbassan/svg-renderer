@@ -69,6 +69,7 @@ function buildStyle(derived: Partial<BaseTextStyle>) {
     return {
         font: buildFont(derived),
         fill: derived.textColor,
+        textDecoration: derived.textDecoration,
     }
 }
 

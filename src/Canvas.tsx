@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from "react";
+import { useContext, useRef } from "react";
 import CanvasContext from "./CanvasContext";
 import useScene from "./useScene";
 import Overlay, { type DragHandlerRef } from "./Overlay";

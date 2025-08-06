@@ -106,8 +106,8 @@ export interface BlockTextStyle {
 export interface SpanTextStyle {
     fontFamily: string;
     fontSize: number;
-    fontWeight: string;
-    fontStyle: string;
+    fontWeight: "normal" | "bold";
+    fontStyle: "normal" | "italic";
     textDecoration: string;
     textColor: HexString;
     highlightColor: HexString;

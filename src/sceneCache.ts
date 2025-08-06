@@ -14,7 +14,7 @@ let scene = {
                 ],
                 rotation: 30,
             },
-            fill: "red",
+            fill: "#ff0000ff",
             stroke: "#ffffffaa",
             strokeWidth: 10,
         },
@@ -41,7 +41,7 @@ let scene = {
                 ],
                 rotation: 30,
             },
-            fill: "yellow",
+            fill: "#ffff00ff",
         },
         "123121": {
             id: "123121",
@@ -54,7 +54,7 @@ let scene = {
                 ],
                 rotation: 30,
             },
-            fill: "white",
+            fill: "#ffffffff",
             stroke: "#00ff00",
             strokeWidth: 5,
         },
@@ -105,7 +105,7 @@ let scene = {
                             {
                                 text: "world below, I am the ruler of this place. These are my subjects.",
                                 style: {
-                                    fontStyle: "bold",
+                                    fontWeight: "bold",
                                     textColor: "#ff0000"
                                 }
                             }
@@ -192,6 +192,29 @@ export function modifyComponent(id: string, props: Record<string, any>) {
     scene.components[id] = { ...component, ...updates };
     scene = { ...scene };
     emitEvent("update_component");
+}
+
+export function modifyComponentProp(id: string, prop: string, val: any) {
+    const component = scene.components[id];
+    if (!component) return;
+
+    const keys = prop.split(".");
+    const lastKey = keys.pop()!;
+    const object = keys.reduce((obj, key) => obj[key], component);
+    object[lastKey] = val;
+
+    scene = { ...scene };
+    emitEvent("update_component");
+}
+
+export function getComponentProp(id: string, prop: string) {
+    const component = scene.components[id];
+    if (!component) return;
+
+    const keys = prop.split(".");
+    const lastKey = keys.pop()!;
+    const object = keys.reduce((obj, key) => obj[key], component);
+    return object[lastKey];
 }
 
 export function modifyComponentBounds(id: string, bounds: Partial<Bounds>) {
