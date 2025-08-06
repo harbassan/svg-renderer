@@ -20,59 +20,47 @@ export interface RelativeBounds {
     rotation: number,
 }
 
-export interface ImageComponent {
+interface GenericComponent {
     id: string;
-    type: "image";
     bounds: Bounds;
+    zIndex: number;
+}
+
+interface ShapeComponent extends GenericComponent {
+    fill: HexString;
+    stroke: HexString;
+    strokeWidth: number;
+}
+
+export interface ImageComponent extends GenericComponent {
+    type: "image";
     href: string;
     preserveAspectRatio: string;
 }
 
-export interface SpeechComponent {
-    id: string;
+export interface SpeechComponent extends ShapeComponent {
     type: "speech";
-    bounds: Bounds;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
-export interface BoxComponent {
-    id: string;
+export interface BoxComponent extends ShapeComponent {
     type: "box";
-    bounds: Bounds;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
-export interface LineComponent {
-    id: string;
+export interface LineComponent extends GenericComponent {
     type: "line";
-    bounds: Bounds;
     stroke: HexString;
     strokeWidth: number;
 }
 
-export interface EllipseComponent {
-    id: string;
+export interface EllipseComponent extends ShapeComponent {
     type: "ellipse";
-    bounds: Bounds;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
-export interface TextBoxComponent {
-    id: string;
+export interface TextBoxComponent extends ShapeComponent {
     type: "textbox";
-    bounds: Bounds;
     content: MinifiedTextShape;
     color: HexString;
     padding: number;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
 interface MinifiedTextShape {

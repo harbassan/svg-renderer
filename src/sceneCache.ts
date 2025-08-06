@@ -17,6 +17,7 @@ let scene = {
             fill: "#ff0000ff",
             stroke: "#ffffffaa",
             strokeWidth: 10,
+            zIndex: 0,
         },
         "126123": {
             id: "126123",
@@ -29,6 +30,7 @@ let scene = {
             },
             stroke: "#ff00ffaa",
             strokeWidth: 10,
+            zIndex: 0,
         },
 
         "123122": {
@@ -42,6 +44,7 @@ let scene = {
                 rotation: 30,
             },
             fill: "#ffff00ff",
+            zIndex: 0,
         },
         "123121": {
             id: "123121",
@@ -57,6 +60,7 @@ let scene = {
             fill: "#ffffffff",
             stroke: "#00ff00",
             strokeWidth: 5,
+            zIndex: 0,
         },
         "321312": {
             id: "321312",
@@ -70,6 +74,7 @@ let scene = {
             },
             href: "https://i.scdn.co/image/ab67616d00001e024738aa171569052376f162fe",
             preserveAspectRatio: "none",
+            zIndex: 0,
         },
         "132312": {
             id: "132312",
@@ -85,6 +90,7 @@ let scene = {
             fill: "#00000000",
             stroke: "#00ff00",
             strokeWidth: 5,
+            zIndex: 0,
             content: {
                 style: {
                     fontFamily: "Helvetica",
@@ -202,7 +208,9 @@ export function modifyComponentProp(id: string, prop: string, val: any) {
     const keys = prop.split(".");
     const lastKey = keys.pop()!;
     const object = keys.reduce((obj, key) => obj[key], component);
-    object[lastKey] = val;
+
+    if (typeof val === "function") object[lastKey] = val(object[lastKey]);
+    else object[lastKey] = val;
 
     scene = { ...scene };
     emitEvent("update_component");

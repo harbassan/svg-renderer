@@ -2,12 +2,12 @@ import { useState } from 'react'
 import './App.css'
 import Canvas from './Canvas'
 import AppContext from './AppContext';
-import { duplicateComponent, getComponentProp, removeComponent } from './sceneCache';
+import { duplicateComponent, getComponentProp, modifyComponentProp, removeComponent } from './sceneCache';
 import ChromePicker from './wrapper/ChromePicker';
 import NumberInput from './wrapper/NumberInput';
 import ToggleInput from './wrapper/ToggleInput';
 import FontInput from './wrapper/FontInput';
-import { AlignCenter, AlignLeft, AlignRight, ArrowDownNarrowWide, Baseline, Bold, CaseSensitive, CaseSensitiveIcon, Copy, Delete, Diameter, Highlighter, Italic, MessageSquare, PaintBucket, Pen, Pencil, Spline, Type, Underline, VectorSquare } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowDownNarrowWide, Baseline, Bold, BringToFront, CaseSensitive, CaseSensitiveIcon, Copy, Delete, Diameter, Highlighter, Italic, MessageSquare, PaintBucket, Pen, Pencil, SendToBack, Spline, Type, Underline, VectorSquare } from 'lucide-react';
 import MultiInput from './wrapper/MultiInput';
 
 function App() {
@@ -58,6 +58,13 @@ function App() {
               <MessageSquare size={16} />
             </button>
             {selected && <>
+              |
+              <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", val => val + 1)}>
+                <BringToFront size={16} />
+              </button>
+              <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", val => val - 1)}>
+                <SendToBack size={16} />
+              </button>
               |
               <ChromePicker prop='fill' >
                 <PaintBucket size={13} />
