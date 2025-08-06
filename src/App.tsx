@@ -7,7 +7,7 @@ import ChromePicker from './wrapper/ChromePicker';
 import NumberInput from './wrapper/NumberInput';
 import ToggleInput from './wrapper/ToggleInput';
 import FontInput from './wrapper/FontInput';
-import { ArrowDownNarrowWide, Baseline, Bold, CaseSensitive, CaseSensitiveIcon, Italic, PaintBucket, Pen, Pencil, Underline } from 'lucide-react';
+import { ArrowDownNarrowWide, Baseline, Bold, CaseSensitive, CaseSensitiveIcon, Copy, Delete, Diameter, Italic, MessageSquare, PaintBucket, Pen, Pencil, Spline, Type, Underline, VectorSquare } from 'lucide-react';
 
 function App() {
   const [selected, setSelected] = useState<string>("");
@@ -33,17 +33,31 @@ function App() {
     <>
       <AppContext.Provider value={{ mode, setMode, createType, selected, setSelected }}>
         <div className="topbar">
-          <div className="actions">
-            <button onClick={() => switchCreate("box")}>Box</button>
-            <button onClick={() => switchCreate("ellipse")}>Ellipse</button>
-            <button onClick={() => switchCreate("line")}>Line</button>
-            <button onClick={() => switchCreate("textbox")}>TextBox</button>
-            <button onClick={() => switchCreate("speech")}>Speech</button>
-            <button onClick={remove} >Delete</button>
-            <button onClick={duplicate} >Duplicate</button>
-          </div >
-          {selected &&
-            <div className="props" style={{ zIndex: 1 }} >
+          <div className="props" style={{ zIndex: 1 }} >
+            <button className="button" onClick={duplicate}>
+              <Copy size={16} />
+            </button>
+            <button className="button" onClick={remove}>
+              <Delete size={16} />
+            </button>
+            |
+            <button className="button" onClick={() => switchCreate("box")}>
+              <VectorSquare size={16} />
+            </button>
+            <button className="button" onClick={() => switchCreate("ellipse")}>
+              <Diameter size={16} />
+            </button>
+            <button className="button" onClick={() => switchCreate("line")}>
+              <Spline size={16} />
+            </button>
+            <button className="button" onClick={() => switchCreate("textbox")}>
+              <Type size={16} />
+            </button>
+            <button className="button" onClick={() => switchCreate("speech")}>
+              <MessageSquare size={16} />
+            </button>
+            {selected && <>
+              |
               <ChromePicker prop='fill' >
                 <PaintBucket size={13} />
               </ChromePicker>
@@ -74,8 +88,9 @@ function App() {
                   <NumberInput prop="content.style.lineHeight" />
                 </>
               }
-            </div >
-          }
+            </>
+            }
+          </div>
         </div>
         <Canvas />
       </AppContext.Provider >

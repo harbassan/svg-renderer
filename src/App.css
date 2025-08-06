@@ -1,14 +1,10 @@
-.actions button {
-    color: white;
-    padding: 0 15px;
-    border-right: 1px solid white;
-    cursor: pointer;
-}
-
 .actions {
     display: flex;
-    gap: 5px;
-    padding: 10px 0;
+    gap: 6px;
+    padding: 5px;
+    color: white;
+    align-items: center;
+    margin-left: 20px;
 }
 
 .topbar {
