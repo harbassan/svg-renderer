@@ -1,0 +1,129 @@
+import { AlignCenter, AlignLeft, AlignRight, ArrowDownNarrowWide, Bold, BringToFront, Diameter, Highlighter, Italic, MessageSquare, PaintBucket, Pencil, SendToBack, Spline, Trash2, Type, Underline, VectorSquare } from "lucide-react";
+import ChromePicker from "./wrapper/ChromePicker";
+import NumberInput from "./wrapper/NumberInput";
+import { copyComponent, getComponentProp, modifyComponentProp, pasteComponent, removeComponent } from "./sceneCache";
+import FontInput from "./wrapper/FontInput";
+import ToggleInput from "./wrapper/ToggleInput";
+import MultiInput from "./wrapper/MultiInput";
+import { useContext, useEffect } from "react";
+import AppContext from "./AppContext";
+
+function Topbar() {
+    const { selected, setSelected, setMode, setCreateType } = useContext(AppContext);
+
+    useEffect(() => {
+        function onCopy(e: ClipboardEvent) {
+            if (!selected) return;
+            e.preventDefault();
+            e.clipboardData!.setData("application/renderer", copyComponent(selected) || "");
+        }
+        function onCut(e: ClipboardEvent) {
+            if (!selected) return;
+            e.preventDefault();
+            e.clipboardData!.setData("application/renderer", copyComponent(selected) || "");
+            remove();
+        }
+        document.addEventListener("copy", onCopy);
+        document.addEventListener("cut", onCut);
+        return () => {
+            document.removeEventListener("copy", onCopy);
+            document.removeEventListener("cut", onCut);
+        }
+    }, [selected])
+
+    useEffect(() => {
+        function onPaste(e: ClipboardEvent) {
+            e.preventDefault();
+            const raw = e.clipboardData!.getData("application/renderer");
+            if (raw) setSelected(pasteComponent(raw));
+        }
+        document.addEventListener("paste", onPaste);
+        return () => document.removeEventListener("paste", onPaste);
+    }, [])
+
+    function remove() {
+        removeComponent(selected);
+        setSelected("");
+    }
+
+    const switchCreate = (type: string) => {
+        setMode("create");
+        setCreateType(type);
+    }
+
+    return (
+        <div className="topbar">
+            <div className="props" style={{ zIndex: 1 }} >
+                <button className="button" onClick={() => switchCreate("box")}>
+                    <VectorSquare size={16} />
+                </button>
+                <button className="button" onClick={() => switchCreate("ellipse")}>
+                    <Diameter size={16} />
+                </button>
+                <button className="button" onClick={() => switchCreate("line")}>
+                    <Spline size={16} />
+                </button>
+                <button className="button" onClick={() => switchCreate("textbox")}>
+                    <Type size={16} />
+                </button>
+                <button className="button" onClick={() => switchCreate("speech")}>
+                    <MessageSquare size={16} />
+                </button>
+                {selected && <>
+                    |
+                    <button className="button" onClick={remove}>
+                        <Trash2 size={16} />
+                    </button>
+                    <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", val => val + 1)}>
+                        <BringToFront size={16} />
+                    </button>
+                    <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", val => val - 1)}>
+                        <SendToBack size={16} />
+                    </button>
+                    |
+                    <ChromePicker prop='fill' >
+                        <PaintBucket size={13} />
+                    </ChromePicker>
+                    <ChromePicker prop='stroke' >
+                        <Pencil size={13} />
+                    </ChromePicker>
+                    <NumberInput prop="strokeWidth" />
+                    {getComponentProp(selected, "type") === "textbox" &&
+                        <>
+                            |
+                            <FontInput prop="content.style.fontFamily" />
+                            <NumberInput prop="content.style.fontSize" />
+                            |
+                            <ToggleInput prop="content.style.fontWeight" enabled='bold' disabled='normal'>
+                                <Bold size={16} />
+                            </ToggleInput>
+                            <ToggleInput prop="content.style.fontStyle" enabled='italic' disabled='normal' >
+                                <Italic size={16} />
+                            </ToggleInput>
+                            <ToggleInput prop="content.style.textDecoration" enabled='underline' disabled='none'>
+                                <Underline size={17} />
+                            </ToggleInput>
+                            <ChromePicker prop="content.style.textColor">
+                                <span>A</span>
+                            </ChromePicker>
+                            <ChromePicker prop="content.style.highlightColor">
+                                <Highlighter size={14} />
+                            </ChromePicker>
+                            |
+                            <MultiInput prop="content.style.alignment" options={["left", "center", "right"]} >
+                                <AlignLeft size={16} />
+                                <AlignCenter size={16} />
+                                <AlignRight size={16} />
+                            </MultiInput>
+                            |
+                            <ArrowDownNarrowWide size={18} />
+                            <NumberInput prop="content.style.lineHeight" />
+                        </>
+                    }
+                </>
+                }
+            </div>
+        </div>)
+}
+
+export default Topbar;

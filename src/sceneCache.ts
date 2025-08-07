@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import type { Bounds } from "./types";
+import type { Bounds, Component } from "./types";
 import { translate } from "./util";
 
 let scene = {
@@ -268,9 +268,17 @@ export function removeComponent(id: string) {
     emitEvent("update_component");
 }
 
-export function duplicateComponent(id: string) {
+export function copyComponent(id: string) {
     const component = scene.components[id];
     if (!component) return;
-    const uuid = createComponent({ ...component, bounds: { verts: translate(component.bounds.verts, { x: 10, y: 10 }), rotation: component.bounds.rotation } });
-    return uuid;
+    return JSON.stringify(component);
+}
+
+export function pasteComponent(component: string) {
+    const newComponent: Component = JSON.parse(component);
+    newComponent.bounds.verts = translate(newComponent.bounds.verts, { x: 10, y: 10 });
+    newComponent.zIndex += 1;
+    scene = { ...scene };
+    emitEvent("update_component");
+    return createComponent(newComponent);
 }
