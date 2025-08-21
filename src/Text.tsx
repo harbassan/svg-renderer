@@ -1,5 +1,5 @@
 import { useContext, useState, useRef, useEffect } from "react";
-import type { BaseTextStyle, TextBlock, TextShape } from "./types";
+import type { BaseTextStyle, RelativeBounds, TextBlock, TextShape } from "./types";
 import CanvasContext from "./CanvasContext";
 import AppContext from "./AppContext";
 import { clamp1, constructPath, expandBoxVerts, rotate, rotateMany, subtract } from "./util";
@@ -587,7 +587,7 @@ function Text(component: TextShape) {
         cursor.absoluteCharI = calculateAbsoluteCharIndex(cursor, blocks);
         return cursor;
     }
-
+		
     function handleMouseDown(e: React.MouseEvent) {
         e.stopPropagation();
         registerHandler("mousemove", handleMouseMove);
@@ -621,13 +621,13 @@ function Text(component: TextShape) {
         clearHandler("mouseup");
     }
 
-    function expandToPath(x: number, y: number, width: number, height: number) {
+    function expandToPath({ x, y, width, height }: Omit<RelativeBounds, "rotation">) {
         let verts = [{ x, y }, { x: x + width, y: y + height }];
         verts = rotateMany(expandBoxVerts(verts), center, bounds.rotation);
         return constructPath(verts);
     }
 
-    function Highlight() {
+		function Highlight() {
         if (selection.start == null || selection.end == null) return null;
         let { start, end } = selection;
         if (isEndBeforeStart(start, end)) [start, end] = [end, start];
@@ -645,7 +645,7 @@ function Text(component: TextShape) {
 
                     const { x, width } = generateHighlightSegment(start, end, line[k], isStart, isEnd);
                     const y = bounds.y + block.start + j * block.style.lineHeight;
-                    const path = <path d={expandToPath(x + bounds.x - 1, y - 1, width + 1, block.style.lineHeight + 1)} fill="#0000ff" />;
+                    const path = <path d={expandToPath({x: x + bounds.x - 1, y: y - 1, width: width + 1, height: block.style.lineHeight + 1})} fill="#0000ff" />;
                     highlights.push(path);
 
                     if (isEnd) return highlights;
@@ -669,7 +669,7 @@ function Text(component: TextShape) {
         const x = bounds.x + span.start + measure(span.text.slice(0, position.charI));
         const y = bounds.y + block.start + position.lineI * block.style.lineHeight;
 
-        const path = expandToPath(x, y, 2, block.style.lineHeight);
+        const path = expandToPath({ x, y, width: 2, height: block.style.lineHeight });
         return <path d={path} fill="#ffffff" />;
     }
 

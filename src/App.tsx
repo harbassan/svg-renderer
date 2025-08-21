@@ -2,44 +2,18 @@ import { useState } from 'react'
 import './App.css'
 import Canvas from './Canvas'
 import AppContext from './AppContext';
-import { duplicateComponent, removeComponent } from './sceneCache';
+import Topbar from './Topbar';
 
 function App() {
-
+  //NOTE: these probably need to be organised better, possibly using some state management lib if it gets big enough
   const [selected, setSelected] = useState<string>("");
   const [mode, setMode] = useState("normal");
   const [createType, setCreateType] = useState("box");
 
-  const switchNormal = () => setMode("normal");
-
-  const switchCreate = (type: string) => {
-    setMode("create");
-    setCreateType(type);
-  }
-
-  function remove() {
-    removeComponent(selected);
-    setSelected("");
-  }
-
-  function duplicate() {
-    const id = duplicateComponent(selected);
-    if (id) setSelected(id);
-  }
-
   return (
     <>
-      <div className="actions">
-        <button onClick={switchNormal}>Mode Normal</button>
-        <button onClick={() => switchCreate("box")}>Create Box</button>
-        <button onClick={() => switchCreate("ellipse")}>Create Ellipse</button>
-        <button onClick={() => switchCreate("line")}>Create Line</button>
-        <button onClick={() => switchCreate("textbox")}>Create TextBox</button>
-        <button onClick={() => switchCreate("speech")}>Create Speech</button>
-        <button onClick={remove} >Delete Component</button>
-        <button onClick={duplicate} >Dupe Component</button>
-      </div >
-      <AppContext.Provider value={{ mode, setMode, createType, selected, setSelected }}>
+      <AppContext.Provider value={{ mode, setMode, setCreateType, createType, selected, setSelected }}>
+        <Topbar />
         <Canvas />
       </AppContext.Provider >
     </>

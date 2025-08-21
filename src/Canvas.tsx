@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from "react";
+import { useContext, useRef } from "react";
 import CanvasContext from "./CanvasContext";
 import useScene from "./useScene";
 import Overlay, { type DragHandlerRef } from "./Overlay";
@@ -95,7 +95,7 @@ function Canvas() {
         return <g onMouseDown={(e) => select(component.id, e)} key={component.id}>{element}</g>
     }
 
-    const components = Object.values(scene.components).map(renderComponent);
+    const components = Object.values(scene.components).sort((a, b) => a.zIndex - b.zIndex).map(renderComponent);
 
     return (
         <CanvasContext.Provider value={{ select, canvasRef, toSVGSpace, registerHandler, clearHandler }}>

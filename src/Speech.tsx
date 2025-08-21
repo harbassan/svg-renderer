@@ -32,7 +32,6 @@ function Speech(component: SpeechComponent) {
     function constructPath() {
         const expanded = rotateMany(expandBoxVerts(bounds.verts), center, bounds.rotation);
         const segment = getSegment();
-        console.log(segment);
         const tail = constructTail(segment);
 
         return (

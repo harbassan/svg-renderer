@@ -20,59 +20,47 @@ export interface RelativeBounds {
     rotation: number,
 }
 
-export interface ImageComponent {
+interface GenericComponent {
     id: string;
-    type: "image";
     bounds: Bounds;
+    zIndex: number;
+}
+
+interface ShapeComponent extends GenericComponent {
+    fill: HexString;
+    stroke: HexString;
+    strokeWidth: number;
+}
+
+export interface ImageComponent extends GenericComponent {
+    type: "image";
     href: string;
     preserveAspectRatio: string;
 }
 
-export interface SpeechComponent {
-    id: string;
+export interface SpeechComponent extends ShapeComponent {
     type: "speech";
-    bounds: Bounds;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
-export interface BoxComponent {
-    id: string;
+export interface BoxComponent extends ShapeComponent {
     type: "box";
-    bounds: Bounds;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
-export interface LineComponent {
-    id: string;
+export interface LineComponent extends GenericComponent {
     type: "line";
-    bounds: Bounds;
     stroke: HexString;
     strokeWidth: number;
 }
 
-export interface EllipseComponent {
-    id: string;
+export interface EllipseComponent extends ShapeComponent {
     type: "ellipse";
-    bounds: Bounds;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
-export interface TextBoxComponent {
-    id: string;
+export interface TextBoxComponent extends ShapeComponent {
     type: "textbox";
-    bounds: Bounds;
     content: MinifiedTextShape;
     color: HexString;
     padding: number;
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
 }
 
 interface MinifiedTextShape {
@@ -106,11 +94,34 @@ export interface BlockTextStyle {
 export interface SpanTextStyle {
     fontFamily: string;
     fontSize: number;
-    fontWeight: string;
-    fontStyle: string;
+    fontWeight: "normal" | "bold";
+    fontStyle: "normal" | "italic";
     textDecoration: string;
     textColor: HexString;
     highlightColor: HexString;
 }
 
 type HexString = string;
+
+export interface CursorPosition {
+    blockI: number;
+    lineI: number;
+    spanI: number;
+    charI: number;
+}
+
+export interface Span {
+    text: string;
+    style: BaseTextStyle;
+    start: number;
+    width: number;
+}
+
+export type Line = Span[];
+
+export interface Block {
+    lines: Line[];
+    style: BaseTextStyle;
+    start: number;
+    height: number;
+}

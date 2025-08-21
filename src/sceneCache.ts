@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import type { Bounds } from "./types";
+import type { Bounds, Component } from "./types";
 import { translate } from "./util";
 
 let scene = {
@@ -14,9 +14,10 @@ let scene = {
                 ],
                 rotation: 30,
             },
-            fill: "red",
+            fill: "#ff0000ff",
             stroke: "#ffffffaa",
             strokeWidth: 10,
+            zIndex: 0,
         },
         "126123": {
             id: "126123",
@@ -29,6 +30,7 @@ let scene = {
             },
             stroke: "#ff00ffaa",
             strokeWidth: 10,
+            zIndex: 0,
         },
 
         "123122": {
@@ -41,7 +43,8 @@ let scene = {
                 ],
                 rotation: 30,
             },
-            fill: "yellow",
+            fill: "#ffff00ff",
+            zIndex: 0,
         },
         "123121": {
             id: "123121",
@@ -54,9 +57,10 @@ let scene = {
                 ],
                 rotation: 30,
             },
-            fill: "white",
+            fill: "#ffffffff",
             stroke: "#00ff00",
             strokeWidth: 5,
+            zIndex: 0,
         },
         "321312": {
             id: "321312",
@@ -70,6 +74,7 @@ let scene = {
             },
             href: "https://i.scdn.co/image/ab67616d00001e024738aa171569052376f162fe",
             preserveAspectRatio: "none",
+            zIndex: 0,
         },
         "132312": {
             id: "132312",
@@ -85,6 +90,7 @@ let scene = {
             fill: "#00000000",
             stroke: "#00ff00",
             strokeWidth: 5,
+            zIndex: 0,
             content: {
                 style: {
                     fontFamily: "Helvetica",
@@ -92,12 +98,14 @@ let scene = {
                     fontWeight: "normal",
                     lineHeight: 24 * 1.1,
                     fontSize: 24,
-                    textColor: "#ffffff"
+                    textColor: "#ffffff",
+                    alignment: "left",
+                    highlightColor: "#00000000"
                 },
                 blocks: [
                     {
                         id: "398457",
-                        alignment: "center",
+                        style: {},
                         spans: [
                             {
                                 text: "Hello from the ",
@@ -105,15 +113,15 @@ let scene = {
                             {
                                 text: "world below, I am the ruler of this place. These are my subjects.",
                                 style: {
-                                    fontStyle: "bold",
-                                    textColor: "#ff0000"
+                                    fontWeight: "bold",
+                                    textColor: "#ff0000",
+                                    highlightColor: "#330000"
                                 }
                             }
                         ]
                     },
                     {
                         id: "290834",
-                        alignment: "left",
                         style: {
                             lineHeight: 40,
                         },
@@ -135,7 +143,6 @@ let scene = {
                         ]
                     },
                     {
-                        alignment: "center",
                         style: {
                             fontFamily: "Georgia",
                             fontStyle: "italic",
@@ -194,6 +201,31 @@ export function modifyComponent(id: string, props: Record<string, any>) {
     emitEvent("update_component");
 }
 
+export function modifyComponentProp(id: string, prop: string, val: any) {
+    const component = scene.components[id];
+    if (!component) return;
+
+    const keys = prop.split(".");
+    const lastKey = keys.pop()!;
+    const object = keys.reduce((obj, key) => obj[key], component);
+
+    if (typeof val === "function") object[lastKey] = val(object[lastKey]);
+    else object[lastKey] = val;
+
+    scene = { ...scene };
+    emitEvent("update_component");
+}
+
+export function getComponentProp(id: string, prop: string) {
+    const component = scene.components[id];
+    if (!component) return;
+
+    const keys = prop.split(".");
+    const lastKey = keys.pop()!;
+    const object = keys.reduce((obj, key) => obj[key], component);
+    return object[lastKey];
+}
+
 export function modifyComponentBounds(id: string, bounds: Partial<Bounds>) {
     const component = scene.components[id];
     if (!component) return;
@@ -236,9 +268,17 @@ export function removeComponent(id: string) {
     emitEvent("update_component");
 }
 
-export function duplicateComponent(id: string) {
+export function copyComponent(id: string) {
     const component = scene.components[id];
     if (!component) return;
-    const uuid = createComponent({ ...component, bounds: { verts: translate(component.bounds.verts, { x: 10, y: 10 }), rotation: component.bounds.rotation } });
-    return uuid;
+    return JSON.stringify(component);
+}
+
+export function pasteComponent(component: string) {
+    const newComponent: Component = JSON.parse(component);
+    newComponent.bounds.verts = translate(newComponent.bounds.verts, { x: 10, y: 10 });
+    newComponent.zIndex += 1;
+    scene = { ...scene };
+    emitEvent("update_component");
+    return createComponent(newComponent);
 }
