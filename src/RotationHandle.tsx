@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "./sceneCache";
+import { modifyComponentBounds } from "./scene/modify";
 import type { Bounds, Scene, Vec2 } from "./types";
 import { deg, getBoxCenter, rotate, subtract } from "./util";
 import AppContext from "./AppContext";

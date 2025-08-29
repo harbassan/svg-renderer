@@ -5,9 +5,9 @@ import type { Bounds, Vec2 } from "./types";
 import Box from "./Box";
 import Speech from "./Speech";
 import Line from "./Line";
-import { createFromBounds } from "./sceneCache";
 import AppContext from "./AppContext";
-import { add, addScalar, multiply, mutate, scale, subtract } from "./util";
+import { add, mutate, scale, subtract } from "./util";
+import { createComponentFromBounds } from "./scene/modify";
 
 function getTailVert(verts: Vec2[]) {
     const dir = mutate(subtract(verts[1], verts[0]), val => val / Math.abs(val));
@@ -55,7 +55,7 @@ const CreateOverlay = () => {
         const position = toSVGSpace(event.clientX, event.clientY);
         let verts = [offset.current, position];
         if (createType === "speech") verts.push(getTailVert(verts));
-        const id = createFromBounds(createType, { verts, rotation: 0 });
+        const id = createComponentFromBounds(createType, { verts, rotation: 0 });
         setSelected(id);
         setMode("normal");
         isTransforming.current = false;

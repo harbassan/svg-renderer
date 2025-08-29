@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "./sceneCache";
 import type { Bounds, Scene, Vec2 } from "./types";
 import { getBoxCenter, rotate, subtract, translate } from "./util";
 import AppContext from "./AppContext";
+import { modifyComponentBounds } from "./scene/modify";
 
 interface Props {
     x: number;

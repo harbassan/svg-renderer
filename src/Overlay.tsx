@@ -1,13 +1,12 @@
 import { useContext, useEffect, useImperativeHandle, useRef, useState } from "react";
 import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "./sceneCache";
+import { modifyComponentBounds } from "./scene/modify";
 import DragHandles from "./DragHandles";
 import Ellipse from "./Ellipse";
 import type { Bounds, Component, Scene, Vec2 } from "./types";
 import Box from "./Box";
 import { subtract, translate } from "./util";
 import Speech from "./Speech";
-import ArbitraryHandle from "./ArbitraryHandle";
 import Line from "./Line";
 import LineHandles from "./LineHandles";
 import AppContext from "./AppContext";

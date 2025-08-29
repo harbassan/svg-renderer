@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import AppContext from "../AppContext";
-import { getComponentProp, modifyComponentProp } from "../sceneCache";
+import { getComponentProp } from "../sceneCache";
+import { modifyComponentProp } from "../scene/modify";
 
 
 function MultiInput({ children, prop, options }: React.PropsWithChildren<{ prop: string, options: string[] }>) {

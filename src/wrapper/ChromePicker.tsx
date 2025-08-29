@@ -1,7 +1,8 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "../AppContext";
-import { getComponentProp, modifyComponentProp } from "../sceneCache";
 import { Chrome, type ColorResult } from "@uiw/react-color";
+import { getComponentProp } from "../sceneCache";
+import { modifyComponentProp } from "../scene/modify";
 
 function ChromePicker({ children, prop }: React.PropsWithChildren<{ prop: string }>) {
     const { selected } = useContext(AppContext);

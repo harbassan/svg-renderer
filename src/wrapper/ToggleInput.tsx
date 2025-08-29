@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import AppContext from "../AppContext";
-import { getComponentProp, modifyComponentProp } from "../sceneCache";
+import { getComponentProp } from "../sceneCache";
+import { modifyComponentProp } from "../scene/modify";
 
 
 function ToggleInput({ children, prop, enabled, disabled }: React.PropsWithChildren<{ prop: string, enabled: string, disabled: string }>) {

@@ -1,12 +1,14 @@
-import { AlignCenter, AlignLeft, AlignRight, ArrowDownNarrowWide, Bold, BringToFront, Diameter, Highlighter, Italic, MessageSquare, PaintBucket, Pencil, SendToBack, Spline, Trash2, Type, Underline, VectorSquare } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, ArrowDownNarrowWide, Bold, BringToFront, Diameter, Highlighter, Italic, MessageSquare, PaintBucket, Pencil, Redo, SendToBack, Spline, Trash2, Type, Underline, Undo, VectorSquare } from "lucide-react";
 import ChromePicker from "./wrapper/ChromePicker";
 import NumberInput from "./wrapper/NumberInput";
-import { copyComponent, getComponentProp, modifyComponentProp, pasteComponent, removeComponent } from "./sceneCache";
+import { getComponentProp, removeComponent } from "./sceneCache";
 import FontInput from "./wrapper/FontInput";
 import ToggleInput from "./wrapper/ToggleInput";
 import MultiInput from "./wrapper/MultiInput";
 import { useContext, useEffect } from "react";
 import AppContext from "./AppContext";
+import { redo, undo } from "./history";
+import { modifyComponentProp, parseComponent, stringifyComponent } from "./scene/modify";
 
 function Topbar() {
     const { selected, setSelected, setMode, setCreateType } = useContext(AppContext);
@@ -15,16 +17,17 @@ function Topbar() {
         function onCopy(e: ClipboardEvent) {
             if (!selected) return;
             e.preventDefault();
-            e.clipboardData!.setData("application/renderer", copyComponent(selected) || "");
+            e.clipboardData!.setData("application/renderer", stringifyComponent(selected) || "");
         }
+
         function onCut(e: ClipboardEvent) {
-            if (!selected) return;
-            e.preventDefault();
-            e.clipboardData!.setData("application/renderer", copyComponent(selected) || "");
+            onCopy(e);
             remove();
         }
+
         document.addEventListener("copy", onCopy);
         document.addEventListener("cut", onCut);
+
         return () => {
             document.removeEventListener("copy", onCopy);
             document.removeEventListener("cut", onCut);
@@ -35,7 +38,7 @@ function Topbar() {
         function onPaste(e: ClipboardEvent) {
             e.preventDefault();
             const raw = e.clipboardData!.getData("application/renderer");
-            if (raw) setSelected(pasteComponent(raw));
+            if (raw) setSelected(parseComponent(raw));
         }
         document.addEventListener("paste", onPaste);
         return () => document.removeEventListener("paste", onPaste);
@@ -54,6 +57,13 @@ function Topbar() {
     return (
         <div className="topbar">
             <div className="props" style={{ zIndex: 1 }} >
+                <button className="button" onClick={undo}>
+                    <Undo size={16} />
+                </button>
+                <button className="button" onClick={redo}>
+                    <Redo size={16} />
+                </button>
+                |
                 <button className="button" onClick={() => switchCreate("box")}>
                     <VectorSquare size={16} />
                 </button>
@@ -74,10 +84,10 @@ function Topbar() {
                     <button className="button" onClick={remove}>
                         <Trash2 size={16} />
                     </button>
-                    <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", val => val + 1)}>
+                    <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", (val: number) => val + 1)}>
                         <BringToFront size={16} />
                     </button>
-                    <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", val => val - 1)}>
+                    <button className="button" onClick={() => modifyComponentProp(selected, "zIndex", (val: number) => val - 1)}>
                         <SendToBack size={16} />
                     </button>
                     |

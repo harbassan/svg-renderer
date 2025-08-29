@@ -1,6 +1,8 @@
 import { v4 } from "uuid";
 import type { Bounds, Component } from "./types";
 import { translate } from "./util";
+import { perform, updateHistory } from "./history";
+import { getObject, merge } from "./scene/util";
 
 let scene = {
     components: {
@@ -161,6 +163,7 @@ let scene = {
     } as Record<string, any>,
 };
 
+// @ts-ignore
 window.scene = scene;
 
 interface listener {
@@ -190,95 +193,41 @@ export function getScene() {
     return scene;
 }
 
-export function modifyComponent(id: string, props: Record<string, any>) {
-    const component = scene.components[id];
-    if (!component) return;
-    const updates = Object.fromEntries(
-        Object.entries(props).filter(([_, v]) => v !== undefined)
-    );
-    scene.components[id] = { ...component, ...updates };
-    scene = { ...scene };
-    emitEvent("update_component");
-}
-
-export function modifyComponentProp(id: string, prop: string, val: any) {
-    const component = scene.components[id];
-    if (!component) return;
-
-    const keys = prop.split(".");
-    const lastKey = keys.pop()!;
-    const object = keys.reduce((obj, key) => obj[key], component);
-
-    if (typeof val === "function") object[lastKey] = val(object[lastKey]);
-    else object[lastKey] = val;
-
-    scene = { ...scene };
-    emitEvent("update_component");
+export function getComponent(id: string) {
+    return scene.components[id] ?? null;
 }
 
 export function getComponentProp(id: string, prop: string) {
     const component = scene.components[id];
     if (!component) return;
-
-    const keys = prop.split(".");
-    const lastKey = keys.pop()!;
-    const object = keys.reduce((obj, key) => obj[key], component);
-    return object[lastKey];
+    const [object, key] = getObject(prop, component);
+    return object[key];
 }
 
-export function modifyComponentBounds(id: string, bounds: Partial<Bounds>) {
-    const component = scene.components[id];
-    if (!component) return;
-    const updates = Object.fromEntries(
-        Object.entries(bounds).filter(([_, v]) => v !== undefined)
-    );
-    component.bounds = { ...component.bounds, ...updates };
+export function addComponent(props: Record<string, any>) {
+    scene.components[props.id] = { ...props };
     scene = { ...scene };
     emitEvent("update_component");
-}
-
-function createComponent(props: Record<string, any>) {
-    const uuid = v4();
-    scene.components[uuid] = { ...props, id: uuid };
-    return uuid;
-}
-
-const defaults = {
-    textbox: { padding: 20, fill: "#ffffff00", content: { style: { textColor: "#ffffff" }, blocks: [{ spans: [{ text: "Nullum bonum textum substitutivum cogitare potui" }] }] } },
-    line: { stroke: "#ffffff", strokeWidth: 2 },
-    default: { fill: "#ffffff" }
-}
-
-export function createFromBounds(type: string, bounds: Bounds) {
-    let props;
-    if (type === "textbox") props = { type, bounds, ...defaults.textbox };
-    else if (type === "line") props = { type, bounds, ...defaults.line };
-    else props = { type, bounds, ...defaults.default };
-
-    const uuid = createComponent(props);
-    scene = { ...scene };
-    emitEvent("update_component");
-    return uuid;
 }
 
 export function removeComponent(id: string) {
-    if (!scene.components[id]) return;
     delete scene.components[id];
     scene = { ...scene };
     emitEvent("update_component");
 }
 
-export function copyComponent(id: string) {
-    const component = scene.components[id];
-    if (!component) return;
-    return JSON.stringify(component);
+export function createComponent(props: Record<string, any>) {
+    const uuid = v4();
+    addComponent({ ...props, id: uuid });
+    updateHistory(uuid, null);
+    return uuid;
 }
 
-export function pasteComponent(component: string) {
-    const newComponent: Component = JSON.parse(component);
-    newComponent.bounds.verts = translate(newComponent.bounds.verts, { x: 10, y: 10 });
-    newComponent.zIndex += 1;
+export function modifyComponent(id: string, props: Record<string, any>) {
+    const component = scene.components[id];
+    if (!component) return;
+    scene.components[id] = merge(component, props);
     scene = { ...scene };
     emitEvent("update_component");
-    return createComponent(newComponent);
 }
+
