@@ -83,7 +83,7 @@ export function createBlock(id: string, pos: ModelCursorPosition) {
 function getFinalCursor(blocks: TextShape["blocks"]) {
     const blockI = blocks.length - 1;
     const spanI = blocks[blockI].spans.length - 1;
-    const charI = blocks[blockI].spans[spanI].text.length - 1;
+    const charI = blocks[blockI].spans[spanI].text.length;
 
     return { blockI, spanI, charI };
 }
@@ -100,8 +100,9 @@ export function moveCursor(id: string, pos: ModelCursorPosition | null, amount: 
             const start = i === pos.blockI ? pos.spanI - 1 : block.spans.length - 1;
             for (let j = start; j >= 0; j--) {
                 const span = block.spans[j];
-                if (span.text.length > Math.abs(modified)) {
-                    return { blockI: i, spanI: j, charI: span.text.length + modified }
+                const offset = pos.spanI === 0 ? modified + 1 : modified;
+                if (span.text.length > Math.abs(offset)) {
+                    return { blockI: i, spanI: j, charI: span.text.length + offset }
                 }
                 modified -= span.text.length;
             }
@@ -111,8 +112,10 @@ export function moveCursor(id: string, pos: ModelCursorPosition | null, amount: 
 
     const spanLength = blocks[pos.blockI].spans[pos.spanI].text.length;
 
-    if (modified >= spanLength) {
-        modified -= spanLength;
+    // the final span in a block can have a cursor at the (non-existent) cr
+    const isFinalSpan = pos.spanI === blocks[pos.blockI].spans.length - 1;
+    if (modified > (isFinalSpan ? spanLength : spanLength - 1)) {
+        modified -= isFinalSpan ? spanLength + 1 : spanLength;
         for (let i = pos.blockI; i < blocks.length; i++) {
             const block = blocks[i];
             const start = i === pos.blockI ? pos.spanI + 1 : 0;
@@ -128,4 +131,9 @@ export function moveCursor(id: string, pos: ModelCursorPosition | null, amount: 
     }
 
     return { blockI: pos.blockI, spanI: pos.spanI, charI: modified };
+}
+
+export function equals(c1: ModelCursorPosition | null, c2: ModelCursorPosition | null) {
+    if (c1 == null || c2 == null) return false;
+    return c1.blockI === c2.blockI && c1.charI === c2.charI && c1.spanI === c2.spanI;
 }

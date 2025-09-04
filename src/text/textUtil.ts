@@ -128,14 +128,14 @@ export function scanLine(line: Line, x: number) {
     return line.length - 1;
 }
 
-export function scanSpan(span: Span, x: number) {
+export function scanSpan(span: Span, x: number, isFinalSpan: boolean) {
     setFont(span.style);
     let accChars = "";
     for (let i = 0; i < span.text.length; i++) {
         accChars += span.text[i];
         if (measure(accChars) > x - span.start) return i;
     }
-    return span.text.length - 1;
+    return isFinalSpan ? span.text.length : span.text.length - 1;
 }
 
 export function getOffset(line: Line, width: number, alignment: string,) {
@@ -167,7 +167,8 @@ export function mapModel(cursor: ModelCursorPosition, blocks: Block[]) {
         for (let j = 0; j < line.length; j++) {
             const span = line[j];
             if (span.parentId === cursor.spanI) {
-                if (span.startIndex <= cursor.charI && span.text.length > cursor.charI - span.startIndex) {
+                const isFinalSpan = j === line.length - 1 && i === renderedBlock.lines.length - 1;
+                if (span.startIndex <= cursor.charI && span.text.length > (isFinalSpan ? cursor.charI - span.startIndex - 1 : cursor.charI - span.startIndex)) {
                     return { blockI: cursor.blockI, lineI: i, spanI: j, charI: cursor.charI - span.startIndex };
                 }
             }
