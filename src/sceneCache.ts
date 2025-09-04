@@ -1,7 +1,5 @@
 import { v4 } from "uuid";
-import type { Bounds, Component } from "./types";
-import { translate } from "./util";
-import { perform, updateHistory } from "./history";
+import { updateHistory } from "./history";
 import { getObject, merge } from "./scene/util";
 
 let scene = {

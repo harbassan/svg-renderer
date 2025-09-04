@@ -1,4 +1,6 @@
-import type { BaseTextStyle, Block, Line, Span, TextBlock, TextShape } from "../types";
+import type { BaseTextStyle, RelativeBounds, TextBlock, TextShape, Vec2 } from "../types";
+import { constructPath, expandBoxVerts, rotateMany } from "../util";
+import type { Block, CursorPosition, Line, ModelCursorPosition, Span } from "./types";
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -46,37 +48,55 @@ function parseBlock(block: TextBlock, squashedStyle: Partial<BaseTextStyle>, max
     let line: Line = [];
     let lineWidth = 0;
 
-    for (const span of block.spans) {
+    for (let spanIndex = 0; spanIndex < block.spans.length; spanIndex++) {
+        const span = block.spans[spanIndex];
         const style = squash(squashedStyle, span.style);
         setFont(style);
 
-        const words = span.text.split(" ");
-        let lineSpan: string[] = [];
-        let lineSpanWidth = 0;
-        const spaceWidth = measure(" ");
+        const tokens = span.text.split(/(\s+)/);
+        let currentText = "";
+        let currentWidth = 0;
+        let currentIndex = 0;
+        let startIndex = 0;
 
-        for (let i = 0; i < words.length; i++) {
-            const word = words[i];
-            const wordWidth = measure(word);
-            const addedWidth = i ? wordWidth + spaceWidth : wordWidth;
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            if (token === "") continue;
 
-            if (lineWidth + lineSpanWidth + addedWidth > maxWidth) {
-                line.push({ text: lineSpan.join(" "), style, width: lineSpanWidth, start: lineWidth });
-                blockLines.push(line);
-                line = [];
-                lineWidth = 0;
-                lineSpan = [word];
-                lineSpanWidth = wordWidth;
+            const tokenWidth = measure(token);
+            const isSpace = /^\s+$/.test(token);
+
+            if (!isSpace && lineWidth + currentWidth + tokenWidth > maxWidth) {
+                if (currentText.length > 0) {
+                    line.push({ text: currentText, style, width: currentWidth, start: lineWidth, parentId: spanIndex, startIndex });
+                }
+
+                if (line.length > 0) {
+                    blockLines.push(line);
+                    line = [];
+                    lineWidth = 0;
+                }
+
+                currentText = token;
+                currentWidth = tokenWidth;
+                startIndex = currentIndex;
             } else {
-                lineSpan.push(word);
-                lineSpanWidth += addedWidth;
+                currentText += token;
+                currentWidth += tokenWidth;
             }
+
+            currentIndex += token.length;
         }
-        line.push({ text: lineSpan.join(" "), style, width: lineSpanWidth, start: lineWidth });
-        lineWidth += lineSpanWidth;
+
+        // always triggers if span is not empty
+        if (currentText.length > 0) {
+            line.push({ text: currentText, style, width: currentWidth, start: lineWidth, parentId: spanIndex, startIndex });
+            lineWidth += currentWidth;
+        }
     }
 
-    if (line.length) blockLines.push(line);
+    if (line.length > 0) blockLines.push(line);
+    else blockLines.push([]); // only triggers if all spans are empty
     return blockLines;
 }
 
@@ -123,4 +143,34 @@ export function getOffset(line: Line, width: number, alignment: string,) {
     const remaining = width - line.reduce((w, span) => w + span.width, 0);
     if (alignment === "center") return remaining / 2;
     return remaining;
+}
+
+export function expandToPath({ x, y, width, height, rotation, origin }: RelativeBounds & { origin: Vec2 }) {
+    let verts = [{ x, y }, { x: x + width, y: y + height }];
+    verts = rotateMany(expandBoxVerts(verts), origin, rotation);
+    return constructPath(verts);
+}
+
+export function mapRendered(cursor: CursorPosition, blocks: Block[]) {
+    const renderedBlock = blocks[cursor.blockI];
+    const renderedLine = renderedBlock?.lines[cursor.lineI];
+    const renderedSpan = renderedLine?.[cursor.spanI];
+    if (!renderedSpan) return null;
+
+    return { blockI: cursor.blockI, spanI: renderedSpan.parentId, charI: renderedSpan.startIndex + cursor.charI };
+}
+
+export function mapModel(cursor: ModelCursorPosition, blocks: Block[]) {
+    const renderedBlock = blocks[cursor.blockI];
+    for (let i = 0; i < renderedBlock?.lines.length; i++) {
+        const line = renderedBlock?.lines[i];
+        for (let j = 0; j < line.length; j++) {
+            const span = line[j];
+            if (span.parentId === cursor.spanI) {
+                if (span.startIndex <= cursor.charI && span.text.length > cursor.charI - span.startIndex) {
+                    return { blockI: cursor.blockI, lineI: i, spanI: j, charI: cursor.charI - span.startIndex };
+                }
+            }
+        }
+    }
 }

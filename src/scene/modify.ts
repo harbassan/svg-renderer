@@ -13,7 +13,7 @@ export function modifyComponentProp(id: string, prop: string, val: any) {
 
     const [object, key] = getObject(prop, current);
     if (typeof val === "function") object[key] = val(object[key]);
-    else if (typeof val === "object") object[key] = merge(object[key], val);
+    else if (typeof val === "object" && !Array.isArray(val)) object[key] = merge(object[key], val);
     else object[key] = val;
 
     modifyComponent(id, current);

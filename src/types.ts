@@ -102,26 +102,3 @@ export interface SpanTextStyle {
 }
 
 type HexString = string;
-
-export interface CursorPosition {
-    blockI: number;
-    lineI: number;
-    spanI: number;
-    charI: number;
-}
-
-export interface Span {
-    text: string;
-    style: BaseTextStyle;
-    start: number;
-    width: number;
-}
-
-export type Line = Span[];
-
-export interface Block {
-    lines: Line[];
-    style: BaseTextStyle;
-    start: number;
-    height: number;
-}

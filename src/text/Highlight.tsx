@@ -1,6 +1,6 @@
-import { getOffset, measure, setFont } from "./text/textUtil";
-import type { Block, CursorPosition, RelativeBounds, Span } from "./types";
-import { constructPath, expandBoxVerts, rotateMany } from "./util";
+import type { RelativeBounds } from "../types";
+import { expandToPath, getOffset, mapModel, measure, setFont } from "./textUtil";
+import type { Block, CursorPosition, Selection, Span } from "./types";
 
 function isEndBeforeStart(start: CursorPosition, end: CursorPosition) {
     if (end.blockI !== start.blockI) return end.blockI < start.blockI;
@@ -26,14 +26,15 @@ function generateHighlightSegment(start: CursorPosition, end: CursorPosition, sp
 }
 
 interface HighlightProps {
-    start?: CursorPosition;
-    end?: CursorPosition;
+    selection: Selection;
     color?: string;
     blocks: Block[];
     bounds: RelativeBounds;
 }
 
-function Highlight({ start, end, blocks, bounds, color }: HighlightProps) {
+function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
+    let start = mapModel(selection.start!, blocks);
+    let end = mapModel(selection.end!, blocks);
     if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
 
     const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
@@ -45,12 +46,6 @@ function Highlight({ start, end, blocks, bounds, color }: HighlightProps) {
         const spanI = blocks[blockI].lines[lineI].length - 1;
         const charI = blocks[blockI].lines[lineI][spanI].text.length - 1;
         end = { blockI, lineI, spanI, charI };
-    }
-
-    function expandToPath(x: number, y: number, width: number, height: number) {
-        let verts = [{ x, y }, { x: x + width, y: y + height }];
-        verts = rotateMany(expandBoxVerts(verts), center, bounds.rotation);
-        return constructPath(verts);
     }
 
     const highlights = [];
@@ -71,7 +66,7 @@ function Highlight({ start, end, blocks, bounds, color }: HighlightProps) {
 
                 highlights.push(
                     <path d={
-                        expandToPath(x + offset + bounds.x - 1, y - 1, width + 1, block.style.lineHeight + 1)
+                        expandToPath({ x: x + offset + bounds.x, y, width, height: block.style.lineHeight, origin: center, rotation: bounds.rotation })
                     } fill={color ?? block.style.highlightColor} />
                 );
 
