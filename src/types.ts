@@ -65,7 +65,7 @@ export interface TextBoxComponent extends ShapeComponent {
 
 interface MinifiedTextShape {
     type: "text";
-    blocks: TextBlock[];
+    blocks: ModelBlock[];
     style?: Partial<BaseTextStyle>;
 }
 
@@ -74,12 +74,12 @@ export interface TextShape extends MinifiedTextShape {
     bounds: RelativeBounds;
 }
 
-export interface TextBlock {
+export interface ModelBlock {
     style?: Partial<BlockTextStyle>;
-    spans: TextSpan[];
+    spans: ModelSpan[];
 }
 
-export interface TextSpan {
+export interface ModelSpan {
     text: string;
     style?: Partial<SpanTextStyle>;
 }

@@ -1,40 +1,41 @@
 import type { RelativeBounds } from "../types";
-import { expandToPath, getOffset, mapModel, measure, setFont } from "./textUtil";
-import type { Block, CursorPosition, Selection, Span } from "./types";
+import { expandToPath } from "../util";
+import { getOffset, setFont, toVisual } from "./textUtil";
+import type { Selection, VisualCursor, VisualSpan, VisualText } from "./types";
 
-function isEndBeforeStart(start: CursorPosition, end: CursorPosition) {
+function isEndBeforeStart(start: VisualCursor, end: VisualCursor) {
     if (end.blockI !== start.blockI) return end.blockI < start.blockI;
     if (end.lineI !== start.lineI) return end.lineI < start.lineI;
     if (end.spanI !== start.spanI) return end.spanI < start.spanI;
     return end.charI < start.charI;
 }
 
-function generateHighlightSegment(start: CursorPosition, end: CursorPosition, span: Span, isStart: boolean, isEnd: boolean) {
+function generateHighlightSegment(start: VisualCursor, end: VisualCursor, span: VisualSpan, isStart: boolean, isEnd: boolean) {
     setFont(span.style);
     if (isStart && isEnd) {
-        const x = measure(span.text.slice(0, start.charI));
-        const width = measure(span.text.slice(start.charI, end.charI));
-        return { x: span.start + x, width };
+        const x = span.charOffsets[start.charI];
+        const width = span.charOffsets[end.charI] - x;
+        return { x: span.x + x, width };
     } if (isStart) {
-        const x = measure(span.text.slice(0, start.charI));
-        return { x: span.start + x, width: span.width - x };
+        const x = span.charOffsets[start.charI];
+        return { x: span.x + x, width: span.width - x };
     } if (isEnd) {
-        const width = measure(span.text.slice(0, end.charI));
-        return { x: span.start, width };
+        const width = span.charOffsets[end.charI];;
+        return { x: span.x, width };
     }
-    return { x: span.start, width: span.width };
+    return { x: span.x, width: span.width };
 }
 
 interface HighlightProps {
     selection: Selection;
     color?: string;
-    blocks: Block[];
+    blocks: VisualText;
     bounds: RelativeBounds;
 }
 
 function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
-    let start = mapModel(selection.start!, blocks);
-    let end = mapModel(selection.end!, blocks);
+    let start = toVisual(selection.start!, blocks);
+    let end = toVisual(selection.end!, blocks);
     if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
 
     const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
@@ -43,8 +44,8 @@ function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
     if (!end) {
         const blockI = blocks.length - 1;
         const lineI = blocks[blockI].lines.length - 1;
-        const spanI = blocks[blockI].lines[lineI].length - 1;
-        const charI = blocks[blockI].lines[lineI][spanI].text.length - 1;
+        const spanI = blocks[blockI].lines[lineI].spans.length - 1;
+        const charI = blocks[blockI].lines[lineI].spans[spanI].text.length - 1;
         end = { blockI, lineI, spanI, charI };
     }
 
@@ -57,12 +58,12 @@ function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
             const line = block.lines[j];
             const offset = getOffset(line, bounds.width, block.style.alignment);
             const isStartLine = j === start.lineI;
-            for (let k = (isStartLine && isStartBlock ? start.spanI : 0); k < line.length; k++) {
+            for (let k = (isStartLine && isStartBlock ? start.spanI : 0); k < line.spans.length; k++) {
                 const isStart = isStartBlock && isStartLine && k === start.spanI;
                 const isEnd = i === end.blockI && j === end.lineI && k === end.spanI;
 
-                const { x, width } = generateHighlightSegment(start, end, line[k], isStart, isEnd);
-                const y = bounds.y + block.start + j * block.style.lineHeight;
+                const { x, width } = generateHighlightSegment(start, end, line.spans[k], isStart, isEnd);
+                const y = bounds.y + block.y + j * block.style.lineHeight;
 
                 highlights.push(
                     <path d={

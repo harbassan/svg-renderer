@@ -109,3 +109,9 @@ export function clamp(value: Vec2, min: number, max: number) {
 export function clamp1(val: number, min: number, max: number) {
     return Math.max(Math.min(val, max), min);
 }
+
+export function expandToPath({ x, y, width, height, rotation, origin }: RelativeBounds & { origin: Vec2 }) {
+    let verts = [{ x, y }, { x: x + width, y: y + height }];
+    verts = rotateMany(expandBoxVerts(verts), origin, rotation);
+    return constructPath(verts);
+}

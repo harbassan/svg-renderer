@@ -1,37 +1,44 @@
 import type { BaseTextStyle } from "../types";
 
-export interface Span {
+export interface VisualSpan {
     text: string;
     style: BaseTextStyle;
-    start: number;
+    x: number;
     width: number;
+    charOffsets: number[];
     parentId: number;
     startIndex: number;
 }
 
-export type Line = Span[];
-
-export interface Block {
-    lines: Line[];
-    style: BaseTextStyle;
-    start: number;
+export interface VisualLine {
+    spans: VisualSpan[];
+    y: number;
     height: number;
 }
 
-export interface CursorPosition {
+export interface VisualBlock {
+    lines: VisualLine[];
+    style: BaseTextStyle;
+    y: number;
+    height: number;
+}
+
+export type VisualText = VisualBlock[];
+
+export interface VisualCursor {
     blockI: number;
     lineI: number;
     spanI: number;
     charI: number;
 }
 
-export interface ModelCursorPosition {
+export interface ModelCursor {
     blockI: number;
     spanI: number;
     charI: number;
 }
 
 export interface Selection {
-    start: ModelCursorPosition | null;
-    end: ModelCursorPosition | null;
+    start: ModelCursor | null;
+    end: ModelCursor | null;
 }
