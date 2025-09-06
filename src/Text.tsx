@@ -2,7 +2,7 @@ import { useContext, useState, useRef, useEffect, useMemo } from "react";
 import type { TextShape } from "./types";
 import CanvasContext from "./CanvasContext";
 import AppContext from "./AppContext";
-import { buildBlocks, buildStyle, parseHit, squash } from "./text/textUtil";
+import { buildBlocks, buildStyle, goToLineEnd, goToLineStart, parseHit, squash } from "./text/textUtil";
 import type { Selection, VisualText } from "./text/types";
 import Cursor from "./text/Cursor";
 import Highlight from "./text/Highlight";
@@ -83,21 +83,51 @@ function Text(component: TextShape) {
 
     function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
         e.preventDefault();
-        if (!selection.start || selection.end) return;
-        const pos = selection.start;
+
+        const { start, end } = selection;
+        if (start == null) return;
+
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-            insertChar(component.id, pos, e.key);
-            setSelection(prev => ({ start: moveCursor(component.id, pos, 1), end: prev.end }));
+            // insert character at cursor
+            insertChar(component.id, start, e.key);
+            setSelection({ start: moveCursor(component.id, start, 1), end });
         } else if (e.key === "Backspace") {
-            const newCursor = deleteChar(component.id, pos);
-            setSelection(prev => ({ start: newCursor, end: prev.end }));
+            // delete character before cursor
+            const newCursor = deleteChar(component.id, start);
+            setSelection({ start: newCursor, end: end });
         } else if (e.key === "Enter") {
-            const newCursor = createBlock(component.id, pos)
-            setSelection(prev => ({ start: newCursor, end: prev.end }));
+            // create a new block at cursor
+            const newCursor = createBlock(component.id, start);
+            setSelection({ start: newCursor, end });
         } else if (e.key === "ArrowLeft") {
-            setSelection(prev => ({ start: moveCursor(component.id, prev.start, -1), end: prev.end }));
+            if (!e.shiftKey) {
+                if (selection.end) setSelection({ start, end: null });
+                else setSelection({ start: moveCursor(component.id, start, -1), end });
+            } else setSelection({ start, end: moveCursor(component.id, end ?? start, -1) });
         } else if (e.key === "ArrowRight") {
-            setSelection(prev => ({ start: moveCursor(component.id, prev.start, 1), end: prev.end }));
+            if (!e.shiftKey) {
+                if (selection.end) setSelection({ start: end, end: null });
+                else setSelection({ start: moveCursor(component.id, start, 1), end });
+            } else setSelection({ start, end: moveCursor(component.id, end ?? start, 1) })
+        } else if (e.key === "ArrowUp") {
+            //TODO: move cursor vertically to the closest position in the line above
+        } else if (e.key === "ArrowDown") {
+            //TODO: move cursor vertically to the closest position in the line below
+        } else if (e.key === "Home") {
+            // move cursor to start of current line
+            if (!selection.start) return;
+            const cursor = goToLineStart(selection.end ?? selection.start, blocks);
+            if (e.shiftKey) setSelection({ start, end: cursor! });
+            else setSelection({ start: cursor!, end: null });
+        } else if (e.key === "End") {
+            // move cursor to end of current line
+            if (!selection.start) return;
+            const cursor = goToLineEnd(selection.end ?? selection.start, blocks);
+            if (e.shiftKey) setSelection({ start, end: cursor! });
+            else setSelection({ start: cursor!, end: null });
+        } else if (e.key === "Escape") {
+            // clear current selection
+            setSelection({ start: null, end: null });
         }
     }
 

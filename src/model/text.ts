@@ -1,28 +1,28 @@
 import { modifyComponentProp } from "../scene/modify";
 import { getComponentProp } from "../sceneCache";
-import type { ModelCursorPosition } from "../text/types";
-import type { TextBlock, TextSpan } from "../types";
+import type { ModelCursor, Selection } from "../text/types";
+import type { ModelBlock, ModelSpan } from "../types";
 
-export function insertChar(id: string, pos: ModelCursorPosition, char: string) {
+export function insertChar(id: string, pos: ModelCursor, char: string) {
     const target = getComponentProp(id, `content.blocks.${pos.blockI}.spans.${pos.spanI}.text`);
     const modified = target.slice(0, pos.charI) + char + target.slice(pos.charI);
     modifyComponentProp(id, `content.blocks.${pos.blockI}.spans.${pos.spanI}.text`, modified);
 }
 
-export function deleteChar(id: string, pos: ModelCursorPosition) {
+export function deleteChar(id: string, pos: ModelCursor) {
     if (!pos.blockI && !pos.spanI && !pos.charI) return pos;
 
-    const blocks: TextBlock[] = getComponentProp(id, `content.blocks`);
+    const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
     const newCursor = moveCursor(id, pos, -1);
 
     if (newCursor.blockI === pos.blockI && newCursor.spanI === pos.spanI) {
-        const spans: TextSpan[] = getComponentProp(id, `content.blocks.${pos.blockI}.spans`);
+        const spans: ModelSpan[] = getComponentProp(id, `content.blocks.${pos.blockI}.spans`);
         const target = spans[pos.spanI].text;
         const modified = target.slice(0, pos.charI - 1) + target.slice(pos.charI);
         modifyComponentProp(id, `content.blocks.${pos.blockI}.spans.${pos.spanI}.text`, modified);
         return moveCursor(id, pos, -1);
     } else if (newCursor.blockI === pos.blockI) {
-        const spans: TextSpan[] = getComponentProp(id, `content.blocks.${pos.blockI}.spans`);
+        const spans: ModelSpan[] = getComponentProp(id, `content.blocks.${pos.blockI}.spans`);
         const target = spans[pos.spanI - 1].text;
         const modified = target.slice(0, target.length - 1);
         if (modified.length === 0) {
@@ -44,8 +44,14 @@ export function deleteChar(id: string, pos: ModelCursorPosition) {
     }
 }
 
-export function createBlock(id: string, pos: ModelCursorPosition) {
-    const blocks: TextBlock[] = getComponentProp(id, `content.blocks`);
+function isEndBeforeStart(start: ModelCursor, end: ModelCursor) {
+    if (end.blockI !== start.blockI) return end.blockI < start.blockI;
+    if (end.spanI !== start.spanI) return end.spanI < start.spanI;
+    return end.charI < start.charI;
+}
+
+export function createBlock(id: string, pos: ModelCursor) {
+    const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
     const old = blocks[pos.blockI];
 
     const oldSpans = [];
@@ -88,7 +94,7 @@ export function createBlock(id: string, pos: ModelCursorPosition) {
 //     return { blockI, spanI, charI };
 // }
 
-function normalizeCursor(blocks: TextBlock[], pos: ModelCursorPosition) {
+function normalizeCursor(blocks: ModelBlock[], pos: ModelCursor) {
     const block = blocks[pos.blockI];
     const span = block.spans[pos.spanI];
 
@@ -100,11 +106,11 @@ function normalizeCursor(blocks: TextBlock[], pos: ModelCursorPosition) {
     return pos;
 }
 
-export function moveCursor(id: string, pos: ModelCursorPosition | null, amount: number) {
+export function moveCursor(id: string, pos: ModelCursor | null, amount: number) {
     if (pos == null) return { blockI: 0, spanI: 0, charI: 0 };
 
     let { blockI, spanI, charI } = pos;
-    const blocks: TextBlock[] = getComponentProp(id, `content.blocks`);
+    const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
 
     while (amount !== 0) {
         const block = blocks[blockI];
@@ -150,7 +156,7 @@ export function moveCursor(id: string, pos: ModelCursorPosition | null, amount: 
     return normalizeCursor(blocks, { blockI, spanI, charI });
 }
 
-export function equals(c1: ModelCursorPosition | null, c2: ModelCursorPosition | null) {
+export function equals(c1: ModelCursor | null, c2: ModelCursor | null) {
     if (c1 == null || c2 == null) return false;
     return c1.blockI === c2.blockI && c1.charI === c2.charI && c1.spanI === c2.spanI;
 }

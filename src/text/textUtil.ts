@@ -206,3 +206,23 @@ export function getVisualPosition(pos: ModelCursor, blocks: VisualText) {
 
     return { x, y };
 }
+
+export function goToLineStart(pos: ModelCursor, blocks: VisualText) {
+    const visual = toVisual(pos, blocks);
+    if (!visual) return;
+    visual.spanI = 0;
+    visual.charI = 0;
+    return toModel(visual, blocks);
+}
+
+export function goToLineEnd(pos: ModelCursor, blocks: VisualText) {
+    const visual = toVisual(pos, blocks);
+    if (!visual) return;
+    const block = blocks[visual.blockI];
+    const line = block.lines[visual.lineI];
+    visual.spanI = line.spans.length - 1;
+    const span = line.spans[visual.spanI];
+    const isFinalSpan = visual.spanI === line.spans.length - 1 && visual.lineI === block.lines.length - 1;
+    visual.charI = isFinalSpan ? span.text.length : span.text.length - 1;
+    return toModel(visual, blocks);
+}
