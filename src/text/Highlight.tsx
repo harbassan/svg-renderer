@@ -1,3 +1,4 @@
+import { normalizeSelection } from "../model/text";
 import type { RelativeBounds } from "../types";
 import { expandToPath } from "../util";
 import { getOffset, setFont, toVisual } from "./textUtil";
@@ -41,10 +42,16 @@ interface HighlightProps {
   bounds: RelativeBounds;
 }
 
+function toVisualSelection(selection: Selection, blocks: VisualText) {
+  return {
+    start: selection.start ? toVisual(selection.start, blocks) : null,
+    end: selection.end ? toVisual(selection.end, blocks) : null
+  };
+}
+
 function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
-  let start = toVisual(selection.start!, blocks);
-  let end = toVisual(selection.end!, blocks);
-  if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
+  let modelSelection = normalizeSelection(selection);
+  let { start, end } = toVisualSelection(modelSelection, blocks);
 
   const center = {
     x: bounds.x + bounds.width / 2,

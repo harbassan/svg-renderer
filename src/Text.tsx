@@ -5,8 +5,11 @@ import AppContext from "./AppContext";
 import {
   buildBlocks,
   buildStyle,
+  getRelativePosition,
+  getVisualPosition,
   goToLineEnd,
   goToLineStart,
+  moveCursorLine,
   parseHit,
   squash,
 } from "./text/textUtil";
@@ -19,10 +22,12 @@ import {
   equals,
   insertChar,
   moveCursor,
+  normalizeSelection,
 } from "./model/text";
 import Rectangle from "./Rectangle";
 
 let isSelecting = false;
+let desiredColumn: number | null = null;
 
 function buildGroups(blocks: VisualText) {
   return blocks.map((block, i) => (
@@ -90,7 +95,7 @@ function Text(component: TextShape) {
     registerHandler("mousemove", handleMouseMove);
     registerHandler("mouseup", handleMouseUp);
     registerHandler("mousedowncapture", handleMouseDownCapture);
-    const position = parseHit(toSVGSpace(e.clientX, e.clientY), blocks, bounds);
+    const position = parseHit(getRelativePosition(toSVGSpace(e.clientX, e.clientY), bounds), blocks);
     setSelected(component.id);
     setSelection({ start: position, end: null });
     isSelecting = true;
@@ -98,6 +103,7 @@ function Text(component: TextShape) {
     setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
+    desiredColumn = null;
   }
 
   function handleMouseDownCapture() {
@@ -107,7 +113,7 @@ function Text(component: TextShape) {
   function handleMouseMove(e: React.MouseEvent) {
     if (!isSelecting) return;
     e.stopPropagation();
-    const position = parseHit(toSVGSpace(e.clientX, e.clientY), blocks, bounds);
+    const position = parseHit(getRelativePosition(toSVGSpace(e.clientX, e.clientY), bounds), blocks);
     setSelection((prev) =>
       equals(position, prev.start)
         ? prev
@@ -140,32 +146,48 @@ function Text(component: TextShape) {
       const newCursor = createBlock(component.id, start);
       setSelection({ start: newCursor, end });
     } else if (e.key === "ArrowLeft") {
+      desiredColumn = null;
       if (!e.shiftKey) {
-        if (selection.end) setSelection({ start, end: null });
-        else setSelection({ start: moveCursor(component.id, start, -1), end });
+        if (selection.end) {
+          const normd = normalizeSelection(selection);
+          setSelection({ start: normd.start, end: null });
+        } else setSelection({ start: moveCursor(component.id, start, -1), end });
       } else
         setSelection({
           start,
           end: moveCursor(component.id, end ?? start, -1),
         });
     } else if (e.key === "ArrowRight") {
+      desiredColumn = null;
       if (!e.shiftKey) {
-        if (selection.end) setSelection({ start: end, end: null });
-        else setSelection({ start: moveCursor(component.id, start, 1), end });
+        if (selection.end) {
+          const normd = normalizeSelection(selection);
+          setSelection({ start: normd.end, end: null });
+        } else setSelection({ start: moveCursor(component.id, start, 1), end });
       } else
         setSelection({ start, end: moveCursor(component.id, end ?? start, 1) });
     } else if (e.key === "ArrowUp") {
-      //TODO: move cursor vertically to the closest position in the line above
+      // move cursor vertically to the closest position in the line above
+      if (!desiredColumn) desiredColumn = getVisualPosition(start, blocks)!.x;
+      const cursor = moveCursorLine(end ?? start, desiredColumn, blocks, 1);
+      if (!e.shiftKey) setSelection({ start: cursor ?? start, end: null });
+      else setSelection({ start, end: cursor });
     } else if (e.key === "ArrowDown") {
-      //TODO: move cursor vertically to the closest position in the line below
+      // move cursor vertically to the closest position in the line below
+      if (!desiredColumn) desiredColumn = getVisualPosition(start, blocks)!.x;
+      const cursor = moveCursorLine(end ?? start, desiredColumn, blocks, -1);
+      if (!e.shiftKey) setSelection({ start: cursor ?? start, end: null });
+      else setSelection({ start, end: cursor });
     } else if (e.key === "Home") {
       // move cursor to start of current line
+      desiredColumn = null;
       if (!selection.start) return;
       const cursor = goToLineStart(selection.end ?? selection.start, blocks);
       if (e.shiftKey) setSelection({ start, end: cursor! });
       else setSelection({ start: cursor!, end: null });
     } else if (e.key === "End") {
       // move cursor to end of current line
+      desiredColumn = null;
       if (!selection.start) return;
       const cursor = goToLineEnd(selection.end ?? selection.start, blocks);
       if (e.shiftKey) setSelection({ start, end: cursor! });

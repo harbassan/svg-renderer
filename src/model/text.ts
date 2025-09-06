@@ -65,11 +65,7 @@ export function deleteChar(id: string, pos: ModelCursor) {
   }
 }
 
-function isEndBeforeStart(start: ModelCursor, end: ModelCursor) {
-  if (end.blockI !== start.blockI) return end.blockI < start.blockI;
-  if (end.spanI !== start.spanI) return end.spanI < start.spanI;
-  return end.charI < start.charI;
-}
+
 
 export function createBlock(id: string, pos: ModelCursor) {
   const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
@@ -119,6 +115,19 @@ export function createBlock(id: string, pos: ModelCursor) {
 //
 //     return { blockI, spanI, charI };
 // }
+//
+
+function isEndBeforeStart(start: ModelCursor, end: ModelCursor) {
+  if (end.blockI !== start.blockI) return end.blockI < start.blockI;
+  if (end.spanI !== start.spanI) return end.spanI < start.spanI;
+  return end.charI < start.charI;
+}
+
+export function normalizeSelection(selection: Selection) {
+  let { start, end } = selection;
+  if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
+  return { start, end };
+}
 
 function normalizeCursor(blocks: ModelBlock[], pos: ModelCursor) {
   const block = blocks[pos.blockI];

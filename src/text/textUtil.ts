@@ -218,9 +218,9 @@ export function toVisual(cursor: ModelCursor, blocks: VisualText) {
         if (
           span.startIndex <= cursor.charI &&
           span.text.length >
-            (isFinalSpan
-              ? cursor.charI - span.startIndex - 1
-              : cursor.charI - span.startIndex)
+          (isFinalSpan
+            ? cursor.charI - span.startIndex - 1
+            : cursor.charI - span.startIndex)
         ) {
           return {
             blockI: cursor.blockI,
@@ -234,29 +234,27 @@ export function toVisual(cursor: ModelCursor, blocks: VisualText) {
   }
 }
 
-export function parseHit(
-  pos: Vec2,
-  blocks: VisualText,
-  bounds: RelativeBounds,
-) {
+export function getRelativePosition(pos: Vec2, bounds: RelativeBounds) {
   const center = {
     x: bounds.x + bounds.width / 2,
     y: bounds.y + bounds.height / 2,
   };
-  const relative = subtract(rotate(pos, center, -bounds.rotation), bounds);
+  return subtract(rotate(pos, center, -bounds.rotation), bounds);
+}
 
-  const blockI = scanText(blocks, relative.y);
+export function parseHit(pos: Vec2, blocks: VisualText) {
+  const blockI = scanText(blocks, pos.y);
   const block = blocks[blockI];
   const lineI = clamp1(
-    Math.floor((relative.y - block.y) / block.style.lineHeight),
+    Math.floor((pos.y - block.y) / block.style.lineHeight),
     0,
     block.lines.length - 1,
   );
   const line = block.lines[lineI];
-  const spanI = scanLine(line, relative.x);
+  const spanI = scanLine(line, pos.x);
   const isFinalSpan =
     spanI === line.spans.length - 1 && lineI === block.lines.length - 1;
-  const charI = scanSpan(line.spans[spanI], relative.x, isFinalSpan);
+  const charI = scanSpan(line.spans[spanI], pos.x, isFinalSpan);
 
   const cursor = { blockI, lineI, spanI, charI };
   return toModel(cursor, blocks);
@@ -297,4 +295,34 @@ export function goToLineEnd(pos: ModelCursor, blocks: VisualText) {
     visual.lineI === block.lines.length - 1;
   visual.charI = isFinalSpan ? span.text.length : span.text.length - 1;
   return toModel(visual, blocks);
+}
+
+export function moveCursorLine(cursor: ModelCursor, desiredX: number, blocks: VisualText, direction: -1 | 1) {
+  let { blockI, lineI } = toVisual(cursor, blocks)!;
+
+  if (direction === 1) {
+    if (lineI > 0) {
+      lineI--;
+    } else if (blockI > 0) {
+      blockI--;
+      lineI = blocks[blockI].lines.length - 1;
+    } else return null; // already at top
+  } else {
+    if (lineI < blocks[blockI].lines.length - 1) {
+      lineI++;
+    } else if (blockI < blocks.length - 1) {
+      blockI++;
+      lineI = 0;
+    } else return null; // already at bottom
+  }
+
+  const block = blocks[blockI];
+  const line = block.lines[lineI];
+  const spanI = scanLine(line, desiredX);
+  const span = line.spans[spanI];
+  const isFinalSpan =
+    spanI === line.spans.length - 1 && lineI === block.lines.length - 1;
+  const charI = scanSpan(span, desiredX, isFinalSpan);
+
+  return toModel({ blockI, lineI, spanI, charI }, blocks);
 }
