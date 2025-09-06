@@ -4,114 +4,126 @@ type Degree = number;
 type Radian = number;
 
 function rad(angle: Degree) {
-    return angle / 360 * 2 * Math.PI;
+  return (angle / 360) * 2 * Math.PI;
 }
 
 export function deg(angle: Radian) {
-    return angle / (2 * Math.PI) * 360;
+  return (angle / (2 * Math.PI)) * 360;
 }
 
 export function add(v1: Vec2, v2: Vec2) {
-    return { x: v1.x + v2.x, y: v1.y + v2.y };
+  return { x: v1.x + v2.x, y: v1.y + v2.y };
 }
 
 export function addScalar(v1: Vec2, val: number) {
-    return { x: v1.x + val, y: v1.y + val };
+  return { x: v1.x + val, y: v1.y + val };
 }
 
 export function subtract(v1: Vec2, v2: Vec2) {
-    return { x: v1.x - v2.x, y: v1.y - v2.y };
+  return { x: v1.x - v2.x, y: v1.y - v2.y };
 }
 
 export function scale(v: Vec2, scale: number) {
-    return { x: v.x * scale, y: v.y * scale };
+  return { x: v.x * scale, y: v.y * scale };
 }
 
 export function multiply(v1: Vec2, v2: Vec2) {
-    return { x: v1.x * v2.x, y: v1.y * v2.y };
+  return { x: v1.x * v2.x, y: v1.y * v2.y };
 }
 
 export function divide(v1: Vec2, v2: Vec2) {
-    return { x: v1.x / v2.x, y: v1.y / v2.y };
+  return { x: v1.x / v2.x, y: v1.y / v2.y };
 }
 
 export function rotate(v: Vec2, origin: Vec2, angle: Degree) {
-    if (!angle) return v;
-    const relative = subtract(v, origin);
-    const cos = Math.cos(rad(angle));
-    const sin = Math.sin(rad(angle));
-    return {
-        x: cos * relative.x - sin * relative.y + origin.x,
-        y: sin * relative.x + cos * relative.y + origin.y
-    };
+  if (!angle) return v;
+  const relative = subtract(v, origin);
+  const cos = Math.cos(rad(angle));
+  const sin = Math.sin(rad(angle));
+  return {
+    x: cos * relative.x - sin * relative.y + origin.x,
+    y: sin * relative.x + cos * relative.y + origin.y,
+  };
 }
 
 export function rotateMany(verts: Vec2[], origin: Vec2, angle: Degree) {
-    if (!angle) return verts;
-    const cos = Math.cos(rad(angle));
-    const sin = Math.sin(rad(angle));
-    return verts.map(point => {
-        const relative = subtract(point, origin);
-        return {
-            x: cos * relative.x - sin * relative.y + origin.x,
-            y: sin * relative.x + cos * relative.y + origin.y
-        }
-    });
+  if (!angle) return verts;
+  const cos = Math.cos(rad(angle));
+  const sin = Math.sin(rad(angle));
+  return verts.map((point) => {
+    const relative = subtract(point, origin);
+    return {
+      x: cos * relative.x - sin * relative.y + origin.x,
+      y: sin * relative.x + cos * relative.y + origin.y,
+    };
+  });
 }
 
 export function translate(verts: Vec2[], delta: Vec2) {
-    return verts.map(vert => add(vert, delta));
+  return verts.map((vert) => add(vert, delta));
 }
 
 export function mutate(vert: Vec2, mutatation: (val: number) => number) {
-    return { x: mutatation(vert.x), y: mutatation(vert.y) }
+  return { x: mutatation(vert.x), y: mutatation(vert.y) };
 }
 
 export function expandBoxVerts(verts: Vec2[]) {
-    return [
-        verts[0], { x: verts[1].x, y: verts[0].y },
-        verts[1], { x: verts[0].x, y: verts[1].y },
-    ];
+  return [
+    verts[0],
+    { x: verts[1].x, y: verts[0].y },
+    verts[1],
+    { x: verts[0].x, y: verts[1].y },
+  ];
 }
 
 export function getBoxCenter(verts: Vec2[]) {
-    return {
-        x: verts[0].x + (verts[1].x - verts[0].x) / 2,
-        y: verts[0].y + (verts[1].y - verts[0].y) / 2
-    };
+  return {
+    x: verts[0].x + (verts[1].x - verts[0].x) / 2,
+    y: verts[0].y + (verts[1].y - verts[0].y) / 2,
+  };
 }
 
 export function getRelativeBounds(verts: Vec2[]): RelativeBounds {
-    const minx = Math.min(verts[0].x, verts[1].x);
-    const miny = Math.min(verts[0].y, verts[1].y);
-    const dims = mutate(subtract(verts[1], verts[0]), Math.abs);
+  const minx = Math.min(verts[0].x, verts[1].x);
+  const miny = Math.min(verts[0].y, verts[1].y);
+  const dims = mutate(subtract(verts[1], verts[0]), Math.abs);
 
-    return { x: minx, y: miny, width: dims.x, height: dims.y };
+  return { x: minx, y: miny, width: dims.x, height: dims.y };
 }
 
 function lify(position: Vec2) {
-    return `L${position.x} ${position.y}`
-};
+  return `L${position.x} ${position.y}`;
+}
 
 export function constructPartialPath(verts: Vec2[]) {
-    return verts.map(lify).join(" ");
+  return verts.map(lify).join(" ");
 }
 
 export function constructPath(verts: Vec2[]) {
-    const partial = constructPartialPath(verts);
-    return "M" + partial.slice(1) + " Z";
+  const partial = constructPartialPath(verts);
+  return "M" + partial.slice(1) + " Z";
 }
 
 export function clamp(value: Vec2, min: number, max: number) {
-    return mutate(value, (val) => Math.max(Math.min(val, max), min));
+  return mutate(value, (val) => Math.max(Math.min(val, max), min));
 }
 
 export function clamp1(val: number, min: number, max: number) {
-    return Math.max(Math.min(val, max), min);
+  return Math.max(Math.min(val, max), min);
 }
 
-export function expandToPath({ x, y, width, height, rotation, origin }: RelativeBounds & { origin: Vec2 }) {
-    let verts = [{ x, y }, { x: x + width, y: y + height }];
-    verts = rotateMany(expandBoxVerts(verts), origin, rotation);
-    return constructPath(verts);
+export function expandToPath({
+  x,
+  y,
+  width,
+  height,
+  rotation,
+  origin,
+}: RelativeBounds & { origin: Vec2 }) {
+  let verts = [
+    { x, y },
+    { x: x + width, y: y + height },
+  ];
+  verts = rotateMany(expandBoxVerts(verts), origin, rotation);
+  return constructPath(verts);
 }

@@ -1,13 +1,22 @@
-import { constructPath, expandBoxVerts, getBoxCenter, rotateMany } from "./util";
+import {
+  constructPath,
+  expandBoxVerts,
+  getBoxCenter,
+  rotateMany,
+} from "./util";
 import type { BoxComponent } from "./types";
 
 function Box(component: BoxComponent) {
-    const { bounds } = component;
+  const { bounds } = component;
 
-    const verts = rotateMany(expandBoxVerts(bounds.verts), getBoxCenter(bounds.verts), bounds.rotation);
-    const path = constructPath(verts);
+  const verts = rotateMany(
+    expandBoxVerts(bounds.verts),
+    getBoxCenter(bounds.verts),
+    bounds.rotation,
+  );
+  const path = constructPath(verts);
 
-    return <path d={path} {...component} />;
+  return <path d={path} {...component} />;
 }
 
 export default Box;

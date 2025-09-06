@@ -1,104 +1,110 @@
-export type Component = BoxComponent | TextBoxComponent | ImageComponent | EllipseComponent | SpeechComponent | LineComponent;
+export type Component =
+  | BoxComponent
+  | TextBoxComponent
+  | ImageComponent
+  | EllipseComponent
+  | SpeechComponent
+  | LineComponent;
 
 export type Scene = { components: Record<string, Component> };
 
 export interface Vec2 {
-    x: number;
-    y: number;
+  x: number;
+  y: number;
 }
 
 export interface Bounds {
-    verts: Vec2[];
-    rotation: number;
+  verts: Vec2[];
+  rotation: number;
 }
 
 export interface RelativeBounds {
-    x: number,
-    y: number,
-    height: number,
-    width: number,
-    rotation: number,
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  rotation: number;
 }
 
 interface GenericComponent {
-    id: string;
-    bounds: Bounds;
-    zIndex: number;
+  id: string;
+  bounds: Bounds;
+  zIndex: number;
 }
 
 interface ShapeComponent extends GenericComponent {
-    fill: HexString;
-    stroke: HexString;
-    strokeWidth: number;
+  fill: HexString;
+  stroke: HexString;
+  strokeWidth: number;
 }
 
 export interface ImageComponent extends GenericComponent {
-    type: "image";
-    href: string;
-    preserveAspectRatio: string;
+  type: "image";
+  href: string;
+  preserveAspectRatio: string;
 }
 
 export interface SpeechComponent extends ShapeComponent {
-    type: "speech";
+  type: "speech";
 }
 
 export interface BoxComponent extends ShapeComponent {
-    type: "box";
+  type: "box";
 }
 
 export interface LineComponent extends GenericComponent {
-    type: "line";
-    stroke: HexString;
-    strokeWidth: number;
+  type: "line";
+  stroke: HexString;
+  strokeWidth: number;
 }
 
 export interface EllipseComponent extends ShapeComponent {
-    type: "ellipse";
+  type: "ellipse";
 }
 
 export interface TextBoxComponent extends ShapeComponent {
-    type: "textbox";
-    content: MinifiedTextShape;
-    color: HexString;
-    padding: number;
+  type: "textbox";
+  content: MinifiedTextShape;
+  color: HexString;
+  padding: number;
 }
 
 interface MinifiedTextShape {
-    type: "text";
-    blocks: ModelBlock[];
-    style?: Partial<BaseTextStyle>;
+  type: "text";
+  blocks: ModelBlock[];
+  style?: Partial<BaseTextStyle>;
 }
 
 export interface TextShape extends MinifiedTextShape {
-    id: string;
-    bounds: RelativeBounds;
+  id: string;
+  bounds: RelativeBounds;
 }
 
 export interface ModelBlock {
-    style?: Partial<BlockTextStyle>;
-    spans: ModelSpan[];
+  style?: Partial<BlockTextStyle>;
+  spans: ModelSpan[];
 }
 
 export interface ModelSpan {
-    text: string;
-    style?: Partial<SpanTextStyle>;
+  text: string;
+  style?: Partial<SpanTextStyle>;
 }
 
-export interface BaseTextStyle extends BlockTextStyle, SpanTextStyle { }
+export interface BaseTextStyle extends BlockTextStyle, SpanTextStyle {}
 
 export interface BlockTextStyle {
-    alignment: "left" | "center" | "right";
-    lineHeight: number;
+  alignment: "left" | "center" | "right";
+  lineHeight: number;
 }
 
 export interface SpanTextStyle {
-    fontFamily: string;
-    fontSize: number;
-    fontWeight: "normal" | "bold";
-    fontStyle: "normal" | "italic";
-    textDecoration: string;
-    textColor: HexString;
-    highlightColor: HexString;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: "normal" | "bold";
+  fontStyle: "normal" | "italic";
+  textDecoration: string;
+  textColor: HexString;
+  highlightColor: HexString;
 }
 
 type HexString = string;
