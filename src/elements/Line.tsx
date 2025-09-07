@@ -1,10 +1,5 @@
-import {
-  constructPath,
-  expandBoxVerts,
-  getBoxCenter,
-  rotateMany,
-} from "./util";
-import type { LineComponent } from "./types";
+import { constructPath } from "../util";
+import type { LineComponent } from "../types";
 
 function Line(component: LineComponent) {
   const { bounds } = component;

@@ -6,17 +6,18 @@ import {
   useState,
 } from "react";
 import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "./scene/modify";
+import { modifyComponentBounds } from "../scene/modify";
 import DragHandles from "./DragHandles";
-import Ellipse from "./Ellipse";
-import type { Bounds, Component, Scene, Vec2 } from "./types";
-import Box from "./Box";
-import { subtract, translate } from "./util";
-import Speech from "./Speech";
-import Line from "./Line";
+import Ellipse from "../elements/Ellipse";
+import type { Bounds, Component, Scene, Vec2 } from "../types";
+import Box from "../elements/Box";
+import { getBoxCenter, subtract, translate } from "../util";
+import Speech from "../elements/Speech";
+import Line from "../elements/Line";
 import LineHandles from "./LineHandles";
-import AppContext from "./AppContext";
+import AppContext from "../AppContext";
 import SpeechHandles from "./SpeechHandles";
+import Rectangle from "./Rectangle";
 
 export interface DragHandlerRef {
   startDrag: (e: MouseEvent, id: string) => void;
@@ -150,10 +151,9 @@ const Overlay = ({
     >
       {component && (
         <>
-          <Box
-            id="bounding-box"
-            type="box"
+          <Rectangle
             bounds={component.bounds}
+            rotationOrigin={getBoxCenter(component.bounds.verts)}
             fill="none"
             stroke="blue"
             strokeWidth={2}

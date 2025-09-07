@@ -83,7 +83,9 @@ export function getBoxCenter(verts: Vec2[]) {
   };
 }
 
-export function getRelativeBounds(verts: Vec2[]): Omit<RelativeBounds, "rotation"> {
+export function getRelativeBounds(
+  verts: Vec2[],
+): Omit<RelativeBounds, "rotation"> {
   const minx = Math.min(verts[0].x, verts[1].x);
   const miny = Math.min(verts[0].y, verts[1].y);
   const dims = mutate(subtract(verts[1], verts[0]), Math.abs);

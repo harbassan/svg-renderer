@@ -5,14 +5,13 @@ import {
   divide,
   expandBoxVerts,
   getBoxCenter,
-  getRelativeBounds,
   multiply,
   mutate,
   rotateMany,
   scale,
   subtract,
-} from "./util";
-import type { SpeechComponent, Vec2 } from "./types";
+} from "../util";
+import type { SpeechComponent, Vec2 } from "../types";
 
 interface Segment {
   grid: Vec2;

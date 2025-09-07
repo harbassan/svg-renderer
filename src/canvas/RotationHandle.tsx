@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "./scene/modify";
-import type { Bounds, Scene, Vec2 } from "./types";
-import { deg, getBoxCenter, rotate, subtract } from "./util";
-import AppContext from "./AppContext";
+import { modifyComponentBounds } from "../scene/modify";
+import type { Bounds, Scene, Vec2 } from "../types";
+import { deg, getBoxCenter, rotate, subtract } from "../util";
+import AppContext from "../AppContext";
 
 interface Props {
   x: number;
@@ -29,7 +29,7 @@ const RotationHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
   function endResize(event: React.MouseEvent) {
     clearHandler("mousemove");
     clearHandler("mouseup");
-    let position = toSVGSpace(event.clientX, event.clientY);
+    const position = toSVGSpace(event.clientX, event.clientY);
     const rotation = getRotation(position, center);
     modifyComponentBounds(selected, { rotation });
     isTransforming.current = false;
@@ -37,7 +37,7 @@ const RotationHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
 
   function updateResize(event: React.MouseEvent) {
     isTransforming.current = true;
-    let position = toSVGSpace(event.clientX, event.clientY);
+    const position = toSVGSpace(event.clientX, event.clientY);
     const rotation = getRotation(position, center);
     setBounds((prev) => ({ ...prev, rotation }));
   }

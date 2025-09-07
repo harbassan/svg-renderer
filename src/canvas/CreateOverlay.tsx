@@ -1,13 +1,13 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import CanvasContext from "./CanvasContext";
-import Ellipse from "./Ellipse";
-import type { Bounds, Vec2 } from "./types";
-import Box from "./Box";
-import Speech from "./Speech";
-import Line from "./Line";
-import AppContext from "./AppContext";
-import { add, mutate, scale, subtract } from "./util";
-import { createComponentFromBounds } from "./scene/modify";
+import Ellipse from "../elements/Ellipse";
+import type { Bounds, Vec2 } from "../types";
+import Box from "../elements/Box";
+import Speech from "../elements/Speech";
+import Line from "../elements/Line";
+import AppContext from "../AppContext";
+import { add, mutate, scale, subtract } from "../util";
+import { createComponentFromBounds } from "../scene/modify";
 
 function getTailVert(verts: Vec2[]) {
   const dir = mutate(
@@ -17,7 +17,7 @@ function getTailVert(verts: Vec2[]) {
   return add(verts[1], scale(dir, 20));
 }
 
-function resolve(type: String, bounds: Bounds) {
+function resolve(type: string, bounds: Bounds) {
   switch (type) {
     case "ellipse":
       return (
@@ -28,6 +28,7 @@ function resolve(type: String, bounds: Bounds) {
           fill="none"
           stroke="green"
           strokeWidth={2}
+          zIndex={1000}
         />
       );
     case "speech":
@@ -39,6 +40,7 @@ function resolve(type: String, bounds: Bounds) {
           fill="none"
           stroke="green"
           strokeWidth={2}
+          zIndex={1000}
         />
       );
     case "line":
@@ -49,6 +51,7 @@ function resolve(type: String, bounds: Bounds) {
           bounds={bounds}
           stroke="green"
           strokeWidth={2}
+          zIndex={1000}
         />
       );
     default:
@@ -60,6 +63,7 @@ function resolve(type: String, bounds: Bounds) {
           fill="none"
           stroke="green"
           strokeWidth={2}
+          zIndex={1000}
         />
       );
   }
@@ -83,7 +87,7 @@ const CreateOverlay = () => {
   function updateDrag(event: React.MouseEvent) {
     isTransforming.current = true;
     const position = toSVGSpace(event.clientX, event.clientY);
-    let verts = [offset.current, position];
+    const verts = [offset.current, position];
     if (createType === "speech") verts.push(getTailVert(verts));
     setVerts(verts);
   }
@@ -92,7 +96,7 @@ const CreateOverlay = () => {
     clearHandler("mousemove");
     clearHandler("mouseup");
     const position = toSVGSpace(event.clientX, event.clientY);
-    let verts = [offset.current, position];
+    const verts = [offset.current, position];
     if (createType === "speech") verts.push(getTailVert(verts));
     const id = createComponentFromBounds(createType, { verts, rotation: 0 });
     setSelected(id);

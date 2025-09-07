@@ -5,6 +5,7 @@ import type {
   VisualBlock,
   VisualCursor,
   VisualLine,
+  VisualSelection,
   VisualSpan,
   VisualText,
 } from "./types";
@@ -231,12 +232,23 @@ export function toVisual(cursor: ModelCursor | null, blocks: VisualText) {
   return null;
 }
 
-export function normalizeVisualCursor(cursor: VisualCursor, blocks: VisualBlock[]) {
+export function normalizeVisualCursor(
+  cursor: VisualCursor,
+  blocks: VisualBlock[],
+) {
   const block = blocks[cursor.blockI];
   const line = block.lines[cursor.lineI];
   if (cursor.lineI < block.lines.length - 1) {
-    if (cursor.spanI === line.spans.length - 1 && cursor.charI === line.spans[cursor.spanI].text.length) {
-      return { blockI: cursor.blockI, lineI: cursor.lineI + 1, spanI: 0, charI: 0 };
+    if (
+      cursor.spanI === line.spans.length - 1 &&
+      cursor.charI === line.spans[cursor.spanI].text.length
+    ) {
+      return {
+        blockI: cursor.blockI,
+        lineI: cursor.lineI + 1,
+        spanI: 0,
+        charI: 0,
+      };
     }
   }
   return cursor;
@@ -280,30 +292,31 @@ export function getVisualPosition(cursor: VisualCursor, blocks: VisualText) {
   return { x, y };
 }
 
-export function goToLineStart(pos: ModelCursor, blocks: VisualText) {
-  const visual = toVisual(pos, blocks);
-  if (!visual) return;
-  visual.spanI = 0;
-  visual.charI = 0;
-  return toModel(visual, blocks);
+export function goToLineStart(cursor: VisualCursor) {
+  cursor.spanI = 0;
+  cursor.charI = 0;
+  return cursor;
 }
 
-export function goToLineEnd(pos: ModelCursor, blocks: VisualText) {
-  const visual = toVisual(pos, blocks);
-  if (!visual) return;
-  const block = blocks[visual.blockI];
-  const line = block.lines[visual.lineI];
-  visual.spanI = line.spans.length - 1;
-  const span = line.spans[visual.spanI];
+export function goToLineEnd(cursor: VisualCursor, blocks: VisualText) {
+  const block = blocks[cursor.blockI];
+  const line = block.lines[cursor.lineI];
+  cursor.spanI = line.spans.length - 1;
+  const span = line.spans[cursor.spanI];
   const isFinalSpan =
-    visual.spanI === line.spans.length - 1 &&
-    visual.lineI === block.lines.length - 1;
-  visual.charI = isFinalSpan ? span.text.length : span.text.length - 1;
-  return toModel(visual, blocks);
+    cursor.spanI === line.spans.length - 1 &&
+    cursor.lineI === block.lines.length - 1;
+  cursor.charI = isFinalSpan ? span.text.length : span.text.length - 1;
+  return cursor;
 }
 
-export function moveCursorLine(cursor: ModelCursor, desiredX: number, blocks: VisualText, direction: -1 | 1) {
-  let { blockI, lineI } = toVisual(cursor, blocks)!;
+export function moveCursorLine(
+  cursor: VisualCursor,
+  desiredX: number,
+  blocks: VisualText,
+  direction: -1 | 1,
+) {
+  let { blockI, lineI } = cursor;
 
   if (direction === 1) {
     if (lineI > 0) {
@@ -327,5 +340,89 @@ export function moveCursorLine(cursor: ModelCursor, desiredX: number, blocks: Vi
   const span = line.spans[spanI];
   const charI = scanSpan(span, desiredX);
 
-  return toModel({ blockI, lineI, spanI, charI }, blocks);
+  return { blockI, lineI, spanI, charI };
+}
+
+function isEndBeforeStartVisual(start: VisualCursor, end: VisualCursor) {
+  if (end.blockI !== start.blockI) return end.blockI < start.blockI;
+  if (end.lineI !== start.lineI) return end.lineI < start.lineI;
+  if (end.spanI !== start.spanI) return end.spanI < start.spanI;
+  return end.charI < start.charI;
+}
+
+export function normalizeSelectionVisual(selection: VisualSelection) {
+  let { start, end } = selection;
+  if (start && end && isEndBeforeStartVisual(start, end))
+    [start, end] = [end, start];
+  return { start, end };
+}
+
+export function moveCursorVisual(
+  blocks: VisualBlock[],
+  pos: VisualCursor | null,
+  amount: number,
+) {
+  if (pos == null) return { blockI: 0, spanI: 0, lineI: 0, charI: 0 };
+
+  let { blockI, spanI, lineI, charI } = pos;
+
+  while (amount !== 0) {
+    const block = blocks[blockI];
+    const line = block.lines[lineI];
+    const span = line.spans[spanI];
+
+    if (amount > 0) {
+      // moving right
+      if (
+        charI <
+        (spanI < line.spans.length - 1
+          ? span.text.length
+          : span.text.length - 1)
+      ) {
+        charI++;
+        amount--;
+      } else if (spanI < line.spans.length - 1) {
+        spanI++;
+        charI = 1;
+        amount--;
+      } else if (lineI < block.lines.length - 1) {
+        lineI++;
+        spanI = 0;
+        charI = 0;
+        amount--;
+      } else if (blockI < blocks.length - 1) {
+        blockI++;
+        lineI = 0;
+        spanI = 0;
+        charI = 0;
+        amount--;
+      } else {
+        break; // end of container
+      }
+    } else {
+      // moving left
+      if (charI > (spanI === 0 ? 0 : 1)) {
+        charI--;
+        amount++;
+      } else if (spanI > 0) {
+        spanI--;
+        charI = line.spans[spanI].text.length;
+        amount++;
+      } else if (lineI > 0) {
+        lineI--;
+        spanI = block.lines[lineI].spans.length - 1;
+        charI = block.lines[lineI].spans[spanI].text.length - 1;
+        amount++;
+      } else if (blockI > 0) {
+        blockI--;
+        lineI = blocks[blockI].lines.length - 1;
+        spanI = blocks[blockI].lines[lineI].spans.length - 1;
+        charI = blocks[blockI].lines[lineI].spans[spanI].text.length;
+        amount++;
+      } else {
+        break; // start of container
+      }
+    }
+  }
+  return { blockI, lineI, spanI, charI };
 }

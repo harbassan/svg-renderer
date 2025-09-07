@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "../AppContext";
 import { Chrome, type ColorResult } from "@uiw/react-color";
-import { getComponentProp } from "../sceneCache";
+import { getComponentProp } from "../scene/scene";
 import { modifyComponentProp } from "../scene/modify";
 
 function ChromePicker({

@@ -22,13 +22,13 @@ import {
 } from "lucide-react";
 import ChromePicker from "./wrapper/ChromePicker";
 import NumberInput from "./wrapper/NumberInput";
-import { getComponentProp, removeComponent } from "./sceneCache";
+import { getComponentProp, removeComponent } from "./scene/scene";
 import FontInput from "./wrapper/FontInput";
 import ToggleInput from "./wrapper/ToggleInput";
 import MultiInput from "./wrapper/MultiInput";
 import { useContext, useEffect } from "react";
 import AppContext from "./AppContext";
-import { redo, undo } from "./history";
+import { redo, undo } from "./scene/history";
 import {
   modifyComponentProp,
   parseComponent,

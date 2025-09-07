@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 import { updateHistory } from "./history";
-import { getObject, merge } from "./scene/util";
+import { getObject, merge } from "./util";
 
 let scene = {
   components: {

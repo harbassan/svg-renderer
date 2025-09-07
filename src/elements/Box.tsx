@@ -3,8 +3,8 @@ import {
   expandBoxVerts,
   getBoxCenter,
   rotateMany,
-} from "./util";
-import type { BoxComponent } from "./types";
+} from "../util";
+import type { BoxComponent } from "../types";
 
 function Box(component: BoxComponent) {
   const { bounds } = component;

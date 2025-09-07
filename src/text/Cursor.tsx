@@ -1,6 +1,6 @@
 import type { RelativeBounds } from "../types";
 import { add, expandToPath } from "../util";
-import { getVisualPosition } from "./textUtil";
+import { getVisualPosition } from "./util";
 import type { VisualSelection, VisualText } from "./types";
 
 function Cursor({

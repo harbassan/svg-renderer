@@ -1,11 +1,11 @@
 import type { Bounds, Component } from "../types";
-import { updateHistory } from "../history";
+import { updateHistory } from "./history";
 import {
   createComponent,
   getComponent,
   modifyComponent,
   removeComponent,
-} from "../sceneCache";
+} from "./scene";
 import { translate } from "../util";
 import { getObject, merge } from "./util";
 

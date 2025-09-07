@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import AppContext from "../AppContext";
-import { getComponentProp } from "../sceneCache";
+import { getComponentProp } from "../scene/scene";
 import { modifyComponentProp } from "../scene/modify";
 
 function FontInput({ prop }: { prop: string }) {

@@ -1,20 +1,18 @@
 import type { RelativeBounds } from "../types";
 import { expandToPath } from "../util";
-import { getOffset, setFont } from "./textUtil";
-import type { VisualCursor, VisualSelection, VisualSpan, VisualText } from "./types";
+import { getOffset, normalizeSelectionVisual, setFont } from "./util";
+import type {
+  VisualCursor,
+  VisualSelection,
+  VisualSpan,
+  VisualText,
+} from "./types";
 
 interface HighlightProps {
   selection: VisualSelection;
   color?: string;
   blocks: VisualText;
   bounds: RelativeBounds;
-}
-
-function isEndBeforeStart(start: VisualCursor, end: VisualCursor) {
-  if (end.blockI !== start.blockI) return end.blockI < start.blockI;
-  if (end.lineI !== start.lineI) return end.lineI < start.lineI;
-  if (end.spanI !== start.spanI) return end.spanI < start.spanI;
-  return end.charI < start.charI;
 }
 
 function generateHighlightSegment(
@@ -41,14 +39,8 @@ function generateHighlightSegment(
   return { x: span.x, width: span.width };
 }
 
-export function normalizeSelection(selection: VisualSelection) {
-  let { start, end } = selection;
-  if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
-  return { start, end };
-}
-
 function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
-  let { start, end } = normalizeSelection(selection);
+  let { start, end } = normalizeSelectionVisual(selection);
 
   const center = {
     x: bounds.x + bounds.width / 2,

@@ -1,11 +1,11 @@
 import { fastIsEqual } from "fast-is-equal";
-import type { Component } from "./types";
+import type { Component } from "../types";
 import {
   addComponent,
   getComponent,
   modifyComponent,
   removeComponent,
-} from "./sceneCache";
+} from "./scene";
 
 interface HistoryObject {
   id: string;

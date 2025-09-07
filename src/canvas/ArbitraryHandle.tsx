@@ -1,65 +1,33 @@
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "./scene/modify";
-import type { Bounds, Scene, Vec2 } from "./types";
-import {
-  add,
-  clamp,
-  divide,
-  getBoxCenter,
-  multiply,
-  rotate,
-  subtract,
-  translate,
-} from "./util";
-import AppContext from "./AppContext";
+import { modifyComponentBounds } from "../scene/modify";
+import type { Bounds, Scene, Vec2 } from "../types";
+import { getBoxCenter, rotate, subtract, translate } from "../util";
+import AppContext from "../AppContext";
 
 interface Props {
   x: number;
   y: number;
-  constraint: "x" | "y";
   scene: Scene;
   setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
   isTransforming: React.RefObject<boolean>;
 }
 
-function modifyVerts(
-  verts: Vec2[],
-  bound: number,
-  v: Vec2,
-  constraint: "x" | "y",
-) {
+function modifyVerts(verts: Vec2[], x: number, y: number, v: Vec2) {
   const newVerts = verts.map((v) => ({ ...v }));
-  newVerts[bound][constraint] = v[constraint];
+  newVerts[x].x = v.x;
+  newVerts[y].y = v.y;
   return newVerts;
 }
 
-const ConstrainedSpeechHandle = ({
-  x,
-  y,
-  constraint,
-  scene,
-  setBounds,
-  isTransforming,
-}: Props) => {
+const ArbitraryHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
   const { selected } = useContext(AppContext);
 
   const bounds = scene?.components[selected].bounds;
   const verts = bounds.verts;
-
-  const bound = constraint === "x" ? x : y;
   const center = getBoxCenter(verts);
-
-  const point = {
-    x: constraint === "x" ? verts[x].x : x,
-    y: constraint === "y" ? verts[y].y : y,
-  };
-  const inversePoint = {
-    x: constraint === "x" ? verts[1 - x].x : x,
-    y: constraint === "y" ? verts[1 - y].y : y,
-  };
 
   function correct(verts: Vec2[]) {
     if (!bounds.rotation) return verts;
@@ -71,19 +39,6 @@ const ConstrainedSpeechHandle = ({
     return translate(verts, correction);
   }
 
-  function getNewTail(position: Vec2) {
-    const diff = subtract(position, point);
-    const scale = clamp(
-      divide(
-        subtract(bounds.verts[2], inversePoint),
-        subtract(point, inversePoint),
-      ),
-      0,
-      1,
-    );
-    return add(bounds.verts[2], multiply(diff, scale));
-  }
-
   function endResize(event: React.MouseEvent) {
     clearHandler("mousemove");
     clearHandler("mouseup");
@@ -92,14 +47,7 @@ const ConstrainedSpeechHandle = ({
       center,
       -bounds.rotation,
     );
-    const newVerts = correct(
-      modifyVerts(
-        modifyVerts(verts, bound, position, constraint),
-        2,
-        getNewTail(position),
-        constraint,
-      ),
-    );
+    const newVerts = correct(modifyVerts(verts, x, y, position));
     modifyComponentBounds(selected, { verts: newVerts });
     isTransforming.current = false;
   }
@@ -111,14 +59,7 @@ const ConstrainedSpeechHandle = ({
       center,
       -bounds.rotation,
     );
-    const newVerts = correct(
-      modifyVerts(
-        modifyVerts(verts, bound, position, constraint),
-        2,
-        getNewTail(position),
-        constraint,
-      ),
-    );
+    const newVerts = correct(modifyVerts(verts, x, y, position));
     setBounds((prev) => ({ ...prev, verts: newVerts }));
   }
 
@@ -128,7 +69,11 @@ const ConstrainedSpeechHandle = ({
     registerHandler("mouseup", (e: React.MouseEvent) => endResize(e));
   }
 
-  const rotated = rotate(point, getBoxCenter(verts), bounds.rotation);
+  const point = rotate(
+    { x: verts[x].x, y: verts[y].y },
+    getBoxCenter(verts),
+    bounds.rotation,
+  );
 
   return (
     <g
@@ -136,9 +81,9 @@ const ConstrainedSpeechHandle = ({
       className="pointer-events-auto"
       style={{ cursor: "crosshair" }}
     >
-      <ellipse cx={rotated.x} cy={rotated.y} rx={5} ry={5} fill="blue" />
+      <ellipse cx={point.x} cy={point.y} rx={5} ry={5} fill="blue" />
     </g>
   );
 };
 
-export default ConstrainedSpeechHandle;
+export default ArbitraryHandle;

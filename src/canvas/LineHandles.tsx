@@ -1,4 +1,4 @@
-import type { Bounds, Scene } from "./types";
+import type { Bounds, Scene } from "../types";
 import ArbitraryHandle from "./ArbitraryHandle";
 
 interface Props {

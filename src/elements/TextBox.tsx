@@ -1,6 +1,5 @@
-import Box from "./Box";
-import Text from "./Text";
-import type { TextBoxComponent, Vec2 } from "./types";
+import Text from "../text/Text";
+import type { RelativeBounds, TextBoxComponent, Vec2 } from "../types";
 import {
   add,
   getBoxCenter,
@@ -8,7 +7,8 @@ import {
   mutate,
   scale,
   subtract,
-} from "./util";
+} from "../util";
+import Box from "./Box";
 
 function pad(verts: Vec2[], amount: number) {
   const center = getBoxCenter(verts);
@@ -21,7 +21,9 @@ function pad(verts: Vec2[], amount: number) {
 
 function TextBox(component: TextBoxComponent) {
   const { bounds, padding, content, id } = component;
-  const relative = getRelativeBounds(pad(bounds.verts, padding));
+  const relative = getRelativeBounds(
+    pad(bounds.verts, padding),
+  ) as RelativeBounds;
   relative.rotation = bounds.rotation;
 
   return (

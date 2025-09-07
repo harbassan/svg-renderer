@@ -38,7 +38,7 @@ export interface ModelCursor {
   charI: number;
 }
 
-export interface Selection {
+export interface ModelSelection {
   start: ModelCursor | null;
   end: ModelCursor | null;
 }

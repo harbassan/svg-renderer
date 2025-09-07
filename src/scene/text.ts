@@ -1,7 +1,7 @@
 import { fastIsEqual } from "fast-is-equal";
-import { modifyComponentProp } from "../scene/modify";
-import { getComponentProp } from "../sceneCache";
-import type { ModelCursor, Selection } from "../text/types";
+import { modifyComponentProp } from "./modify";
+import { getComponentProp } from "./scene";
+import type { ModelCursor, ModelSelection } from "../text/types";
 import type { ModelBlock, ModelSpan } from "../types";
 
 export function insertChar(id: string, pos: ModelCursor, char: string) {
@@ -65,14 +65,21 @@ export function deleteChar(id: string, pos: ModelCursor) {
     blocks[pos.blockI - 1].spans = prev.spans.concat(current.spans);
     modifyComponentProp(id, `content.blocks`, normalizeBlocks(blocks));
     if (current.spans.length === 1 && current.spans[0].text.length === 0) {
-      return { blockI: pos.blockI - 1, spanI: prevSpanLength - 1, charI: prev.spans[prevSpanLength - 1].text.length };
-    };
+      return {
+        blockI: pos.blockI - 1,
+        spanI: prevSpanLength - 1,
+        charI: prev.spans[prevSpanLength - 1].text.length,
+      };
+    }
     return { blockI: pos.blockI - 1, spanI: prevSpanLength, charI: 0 };
   }
 }
 
 function splitSpan(id: string, cursor: ModelCursor) {
-  const block: ModelBlock = getComponentProp(id, `content.blocks.${cursor.blockI}`);
+  const block: ModelBlock = getComponentProp(
+    id,
+    `content.blocks.${cursor.blockI}`,
+  );
   const span = block.spans[cursor.spanI];
 
   const left = span.text.slice(0, cursor.charI);
@@ -84,29 +91,33 @@ function splitSpan(id: string, cursor: ModelCursor) {
     ...block.spans.slice(0, cursor.spanI),
     leftSpan,
     rightSpan,
-    ...block.spans.slice(cursor.spanI + 1)
-  ]
+    ...block.spans.slice(cursor.spanI + 1),
+  ];
 
   modifyComponentProp(id, `content.blocks.${cursor.blockI}.spans`, newSpans);
 
   return { blockI: cursor.blockI, spanI: cursor.spanI + 1, charI: 0 };
 }
 
-function splitSelection(id: string, selection: Selection) {
+function splitSelection(id: string, selection: ModelSelection) {
   const end = splitSpan(id, selection.end!);
   const start = splitSpan(id, selection.start!);
   if (end.blockI === start.blockI) end.spanI++;
   return { start, end };
 }
 
-export function insertSelection(id: string, selection: Selection, char: string) {
+export function insertSelection(
+  id: string,
+  selection: ModelSelection,
+  char: string,
+) {
   const cursor = deleteSelection(id, selection);
   return insertChar(id, cursor, char);
 }
 
-export function deleteSelection(id: string, selection: Selection) {
+export function deleteSelection(id: string, selection: ModelSelection) {
   const normd = normalizeSelection(selection);
-  let { start, end } = splitSelection(id, normd);
+  const { start, end } = splitSelection(id, normd);
 
   const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
   const startBlock = blocks[start.blockI];
@@ -114,13 +125,13 @@ export function deleteSelection(id: string, selection: Selection) {
 
   const newSpans = [
     ...startBlock.spans.slice(0, start.spanI),
-    ...endBlock.spans.slice(end.spanI)
+    ...endBlock.spans.slice(end.spanI),
   ];
 
   const newBlocks = [
     ...blocks.slice(0, start.blockI),
     { spans: newSpans, style: startBlock.style },
-    ...blocks.slice(end.blockI + 1)
+    ...blocks.slice(end.blockI + 1),
   ];
 
   modifyComponentProp(id, "content.blocks", normalizeBlocks(newBlocks));
@@ -129,24 +140,26 @@ export function deleteSelection(id: string, selection: Selection) {
 }
 
 export function normalizeBlocks(blocks: ModelBlock[]) {
-  return blocks.map(block => {
-    const filteredSpans = block.spans.filter((span, i) => {
-      const isFinal = i === block.spans.length - 1;
-      return span.text.length > 0 || isFinal;
-    });
+  return blocks
+    .map((block) => {
+      const filteredSpans = block.spans.filter((span, i) => {
+        const isFinal = i === block.spans.length - 1;
+        return span.text.length > 0 || isFinal;
+      });
 
-    const mergedSpans: ModelSpan[] = [];
-    for (const span of filteredSpans) {
-      const last = mergedSpans[mergedSpans.length - 1];
-      if (last && fastIsEqual(last.style, span.style)) {
-        last.text += span.text;
-      } else {
-        mergedSpans.push({ ...span });
+      const mergedSpans: ModelSpan[] = [];
+      for (const span of filteredSpans) {
+        const last = mergedSpans[mergedSpans.length - 1];
+        if (last && fastIsEqual(last.style, span.style)) {
+          last.text += span.text;
+        } else {
+          mergedSpans.push({ ...span });
+        }
       }
-    }
 
-    return { ...block, spans: mergedSpans };
-  }).filter(block => block.spans.length > 0);
+      return { ...block, spans: mergedSpans };
+    })
+    .filter((block) => block.spans.length > 0);
 }
 
 export function createBlock(id: string, pos: ModelCursor) {
@@ -190,22 +203,13 @@ export function createBlock(id: string, pos: ModelCursor) {
   return { blockI: pos.blockI + 1, spanI: 0, charI: 0 };
 }
 
-// function getFinalCursor(blocks: TextShape["blocks"]) {
-//     const blockI = blocks.length - 1;
-//     const spanI = blocks[blockI].spans.length - 1;
-//     const charI = blocks[blockI].spans[spanI].text.length;
-//
-//     return { blockI, spanI, charI };
-// }
-//
-
 function isEndBeforeStart(start: ModelCursor, end: ModelCursor) {
   if (end.blockI !== start.blockI) return end.blockI < start.blockI;
   if (end.spanI !== start.spanI) return end.spanI < start.spanI;
   return end.charI < start.charI;
 }
 
-export function normalizeSelection(selection: Selection) {
+export function normalizeSelection(selection: ModelSelection) {
   let { start, end } = selection;
   if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
   return { start, end };
@@ -215,16 +219,16 @@ function normalizeCursor(blocks: ModelBlock[], pos: ModelCursor) {
   // if at start of span but not the first span then move to prev span end
   if (pos.charI === 0 && pos.spanI > 0) {
     const prev = blocks[pos.blockI].spans[pos.spanI - 1];
-    return { blockI: pos.blockI, spanI: pos.spanI - 1, charI: prev.text.length };
+    return {
+      blockI: pos.blockI,
+      spanI: pos.spanI - 1,
+      charI: prev.text.length,
+    };
   }
   return pos;
 }
 
-export function moveCursor(
-  id: string,
-  pos: ModelCursor | null,
-  amount: number,
-) {
+function moveCursor(id: string, pos: ModelCursor | null, amount: number) {
   if (pos == null) return { blockI: 0, spanI: 0, charI: 0 };
 
   let { blockI, spanI, charI } = pos;

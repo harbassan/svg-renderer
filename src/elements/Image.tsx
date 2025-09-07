@@ -1,5 +1,5 @@
-import type { ImageComponent } from "./types";
-import { getRelativeBounds, mutate, subtract } from "./util";
+import type { ImageComponent } from "../types";
+import { getRelativeBounds, mutate, subtract } from "../util";
 
 function Image(component: ImageComponent) {
   const { bounds } = component;

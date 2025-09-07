@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { getScene, registerListener, unregisterListener } from "./sceneCache";
+import { getScene, registerListener, unregisterListener } from "./scene/scene";
 
 function subscribe(callback: () => void) {
   registerListener({ id: "use_scene", type: "update_component", callback });

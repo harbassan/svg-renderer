@@ -1,16 +1,16 @@
 import { useContext, useRef } from "react";
 import CanvasContext from "./CanvasContext";
-import useScene from "./useScene";
+import useScene from "../useScene";
 import Overlay, { type DragHandlerRef } from "./Overlay";
-import type { Component } from "./types";
-import TextBox from "./TextBox";
-import Speech from "./Speech";
-import Ellipse from "./Ellipse";
-import Box from "./Box";
-import Image from "./Image";
-import Line from "./Line";
+import type { Component } from "../types";
+import TextBox from "../elements/TextBox";
+import Speech from "../elements/Speech";
+import Ellipse from "../elements/Ellipse";
+import Box from "../elements/Box";
+import Image from "../elements/Image";
+import Line from "../elements/Line";
 import CreateOverlay from "./CreateOverlay";
-import AppContext from "./AppContext";
+import AppContext from "../AppContext";
 
 function resolve(component: Component) {
   switch (component.type) {
