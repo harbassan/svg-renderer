@@ -1,14 +1,14 @@
 import type { RelativeBounds } from "../types";
 import { add, expandToPath } from "../util";
 import { getVisualPosition } from "./textUtil";
-import type { Selection, VisualText } from "./types";
+import type { VisualSelection, VisualText } from "./types";
 
 function Cursor({
   selection,
   blocks,
   bounds,
 }: {
-  selection: Selection;
+  selection: VisualSelection;
   blocks: VisualText;
   bounds: RelativeBounds;
 }) {
@@ -17,6 +17,7 @@ function Cursor({
 
   const relativePosition = getVisualPosition(start, blocks);
   if (!relativePosition) return;
+
   const position = add(relativePosition, bounds);
   const block = blocks[start.blockI];
 

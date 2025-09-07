@@ -42,3 +42,8 @@ export interface Selection {
   start: ModelCursor | null;
   end: ModelCursor | null;
 }
+
+export interface VisualSelection {
+  start: VisualCursor | null;
+  end: VisualCursor | null;
+}

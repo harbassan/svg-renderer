@@ -12,15 +12,19 @@ import {
   moveCursorLine,
   parseHit,
   squash,
+  toModel,
+  toVisual,
 } from "./text/textUtil";
-import type { Selection, VisualText } from "./text/types";
+import type { Selection, VisualSelection, VisualText } from "./text/types";
 import Cursor from "./text/Cursor";
 import Highlight from "./text/Highlight";
 import {
   createBlock,
   deleteChar,
+  deleteSelection,
   equals,
   insertChar,
+  insertSelection,
   moveCursor,
   normalizeSelection,
 } from "./model/text";
@@ -64,13 +68,49 @@ function Text(component: TextShape) {
   const { toSVGSpace, registerHandler, clearHandler } =
     useContext(CanvasContext);
   const { setSelected } = useContext(AppContext);
+
   const [selection, setSelection] = useState<Selection>({
     start: null,
     end: null,
   });
+
+  const [visual, setVisual] = useState<VisualSelection>({
+    start: null,
+    end: null,
+  });
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   console.log("render");
+
+  function isVisualSelection(selection: Selection | VisualSelection): selection is VisualSelection {
+    if (selection.start == null) return false;
+    return "lineI" in selection.start;
+  }
+
+  function genSelection(update: Selection | VisualSelection) {
+    const next = update;
+    if (next == null) return;
+
+    if (isVisualSelection(next)) {
+      const { start, end } = next;
+      setSelection({ start: toModel(start, blocks), end: toModel(end, blocks) });
+      setVisual(next);
+    } else {
+      const { start, end } = next;
+      setSelection(next);
+      setVisual({ start: toVisual(start, blocks), end: toVisual(end, blocks) });
+    }
+  }
+
+  function genSelectionDynamic(updater: ((prev: VisualSelection) => VisualSelection | null)) {
+    setVisual(prev => {
+      const next = updater(prev);
+      if (next == null) return prev;
+      setSelection({ start: toModel(next.start, blocks), end: toModel(next.end, blocks) });
+      return next;
+    });
+  }
 
   // Focus the hidden input when the cursor is set (clicked)
   useEffect(() => {
@@ -97,7 +137,7 @@ function Text(component: TextShape) {
     registerHandler("mousedowncapture", handleMouseDownCapture);
     const position = parseHit(getRelativePosition(toSVGSpace(e.clientX, e.clientY), bounds), blocks);
     setSelected(component.id);
-    setSelection({ start: position, end: null });
+    genSelectionDynamic(prev => equals(prev.start, position) ? null : { start: position, end: null });
     isSelecting = true;
     // Focus the input on click
     setTimeout(() => {
@@ -107,18 +147,14 @@ function Text(component: TextShape) {
   }
 
   function handleMouseDownCapture() {
-    setSelection({ start: null, end: null });
+    genSelection({ start: null, end: null });
   }
 
   function handleMouseMove(e: React.MouseEvent) {
     if (!isSelecting) return;
     e.stopPropagation();
     const position = parseHit(getRelativePosition(toSVGSpace(e.clientX, e.clientY), bounds), blocks);
-    setSelection((prev) =>
-      equals(position, prev.start)
-        ? prev
-        : { start: prev.start, end: position },
-    );
+    genSelectionDynamic(prev => equals(prev.start, position) ? null : { start: prev.start, end: position });
   }
 
   function handleMouseUp() {
@@ -135,25 +171,25 @@ function Text(component: TextShape) {
 
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       // insert character at cursor
-      insertChar(component.id, start, e.key);
-      setSelection({ start: moveCursor(component.id, start, 1), end });
+      const newCursor = end ? insertSelection(component.id, selection, e.key) : insertChar(component.id, start, e.key);
+      genSelection({ start: newCursor, end: null });
     } else if (e.key === "Backspace") {
       // delete character before cursor
-      const newCursor = deleteChar(component.id, start);
-      setSelection({ start: newCursor, end: end });
+      const newCursor = !end ? deleteChar(component.id, start) : deleteSelection(component.id, selection);
+      genSelection({ start: newCursor, end: null });
     } else if (e.key === "Enter") {
       // create a new block at cursor
       const newCursor = createBlock(component.id, start);
-      setSelection({ start: newCursor, end });
+      genSelection({ start: newCursor, end });
     } else if (e.key === "ArrowLeft") {
       desiredColumn = null;
       if (!e.shiftKey) {
         if (selection.end) {
           const normd = normalizeSelection(selection);
-          setSelection({ start: normd.start, end: null });
-        } else setSelection({ start: moveCursor(component.id, start, -1), end });
+          genSelection({ start: normd.start, end: null });
+        } else genSelection({ start: moveCursor(component.id, start, -1), end });
       } else
-        setSelection({
+        genSelection({
           start,
           end: moveCursor(component.id, end ?? start, -1),
         });
@@ -162,39 +198,39 @@ function Text(component: TextShape) {
       if (!e.shiftKey) {
         if (selection.end) {
           const normd = normalizeSelection(selection);
-          setSelection({ start: normd.end, end: null });
-        } else setSelection({ start: moveCursor(component.id, start, 1), end });
+          genSelection({ start: normd.end, end: null });
+        } else genSelection({ start: moveCursor(component.id, start, 1), end });
       } else
-        setSelection({ start, end: moveCursor(component.id, end ?? start, 1) });
+        genSelection({ start, end: moveCursor(component.id, end ?? start, 1) });
     } else if (e.key === "ArrowUp") {
       // move cursor vertically to the closest position in the line above
-      if (!desiredColumn) desiredColumn = getVisualPosition(start, blocks)!.x;
+      if (!desiredColumn) desiredColumn = getVisualPosition(visual.start!, blocks)!.x;
       const cursor = moveCursorLine(end ?? start, desiredColumn, blocks, 1);
-      if (!e.shiftKey) setSelection({ start: cursor ?? start, end: null });
-      else setSelection({ start, end: cursor });
+      if (!e.shiftKey) genSelection({ start: cursor ?? start, end: null });
+      else genSelection({ start, end: cursor });
     } else if (e.key === "ArrowDown") {
       // move cursor vertically to the closest position in the line below
-      if (!desiredColumn) desiredColumn = getVisualPosition(start, blocks)!.x;
+      if (!desiredColumn) desiredColumn = getVisualPosition(visual.start!, blocks)!.x;
       const cursor = moveCursorLine(end ?? start, desiredColumn, blocks, -1);
-      if (!e.shiftKey) setSelection({ start: cursor ?? start, end: null });
-      else setSelection({ start, end: cursor });
+      if (!e.shiftKey) genSelection({ start: cursor ?? start, end: null });
+      else genSelection({ start, end: cursor });
     } else if (e.key === "Home") {
       // move cursor to start of current line
       desiredColumn = null;
       if (!selection.start) return;
       const cursor = goToLineStart(selection.end ?? selection.start, blocks);
-      if (e.shiftKey) setSelection({ start, end: cursor! });
-      else setSelection({ start: cursor!, end: null });
+      if (e.shiftKey) genSelection({ start, end: cursor! });
+      else genSelection({ start: cursor!, end: null });
     } else if (e.key === "End") {
       // move cursor to end of current line
       desiredColumn = null;
       if (!selection.start) return;
       const cursor = goToLineEnd(selection.end ?? selection.start, blocks);
-      if (e.shiftKey) setSelection({ start, end: cursor! });
-      else setSelection({ start: cursor!, end: null });
+      if (e.shiftKey) genSelection({ start, end: cursor! });
+      else genSelection({ start: cursor!, end: null });
     } else if (e.key === "Escape") {
       // clear current selection
-      setSelection({ start: null, end: null });
+      genSelection({ start: null, end: null });
     }
   }
 
@@ -239,7 +275,7 @@ function Text(component: TextShape) {
       </foreignObject>
       {selection.end && (
         <Highlight
-          selection={selection}
+          selection={visual}
           color="blue"
           blocks={blocks}
           bounds={bounds}
@@ -248,7 +284,7 @@ function Text(component: TextShape) {
       <g className="select-none" transform={transformation}>
         {buildGroups(blocks)}
       </g>
-      <Cursor selection={selection} blocks={blocks} bounds={bounds} />
+      <Cursor selection={visual} blocks={blocks} bounds={bounds} />
       <Rectangle
         onMouseDown={handleMouseDown}
         bounds={selectionArea}

@@ -95,7 +95,7 @@ export function buildBlocks(component: TextShape) {
 
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        if (token === "") continue;
+        if (token === "" && i !== tokens.length - 1) continue;
 
         const tokenWidth = measure(token);
         const isSpace = /^\s+$/.test(token);
@@ -138,18 +138,16 @@ export function buildBlocks(component: TextShape) {
       }
 
       // always triggers if span is not empty
-      if (currentText.length > 0) {
-        line.spans.push({
-          text: currentText,
-          charOffsets: generateOffsets(currentText),
-          style: spanStyle,
-          width: currentWidth,
-          x: lineWidth,
-          parentId: spanIndex,
-          startIndex,
-        });
-        lineWidth += currentWidth;
-      }
+      line.spans.push({
+        text: currentText,
+        charOffsets: generateOffsets(currentText),
+        style: spanStyle,
+        width: currentWidth,
+        x: lineWidth,
+        parentId: spanIndex,
+        startIndex,
+      });
+      lineWidth += currentWidth;
     }
 
     if (line.spans.length > 0) visualBlock.lines.push(line);
@@ -178,12 +176,12 @@ export function scanLine(line: VisualLine, x: number) {
   return line.spans.length - 1;
 }
 
-export function scanSpan(span: VisualSpan, x: number, isFinalSpan: boolean) {
+export function scanSpan(span: VisualSpan, x: number) {
   for (let i = 0; i < span.charOffsets.length; i++) {
     const offset = (span.charOffsets[i] + span.charOffsets[i + 1]) / 2;
     if (offset > x - span.x) return i;
   }
-  return isFinalSpan ? span.text.length : span.text.length - 1;
+  return span.text.length;
 }
 
 export function getOffset(line: VisualLine, width: number, alignment: string) {
@@ -193,7 +191,8 @@ export function getOffset(line: VisualLine, width: number, alignment: string) {
   return remaining;
 }
 
-export function toModel(cursor: VisualCursor, blocks: VisualText) {
+export function toModel(cursor: VisualCursor | null, blocks: VisualText) {
+  if (cursor == null) return null;
   const visualBlock = blocks[cursor.blockI];
   const visualLine = visualBlock?.lines[cursor.lineI];
   const visualSpan = visualLine?.spans[cursor.spanI];
@@ -206,32 +205,41 @@ export function toModel(cursor: VisualCursor, blocks: VisualText) {
   };
 }
 
-export function toVisual(cursor: ModelCursor, blocks: VisualText) {
+export function toVisual(cursor: ModelCursor | null, blocks: VisualText) {
+  if (cursor == null) return null;
   const visualBlock = blocks[cursor.blockI];
   for (let i = 0; i < visualBlock?.lines.length; i++) {
     const line = visualBlock?.lines[i];
     for (let j = 0; j < line.spans.length; j++) {
       const span = line.spans[j];
       if (span.parentId === cursor.spanI) {
-        const isFinalSpan =
-          j === line.spans.length - 1 && i === visualBlock.lines.length - 1;
         if (
-          span.startIndex <= cursor.charI &&
-          span.text.length >
-          (isFinalSpan
-            ? cursor.charI - span.startIndex - 1
-            : cursor.charI - span.startIndex)
+          cursor.charI >= span.startIndex &&
+          cursor.charI - span.startIndex <= span.text.length
         ) {
-          return {
+          const newCursor = {
             blockI: cursor.blockI,
             lineI: i,
             spanI: j,
             charI: cursor.charI - span.startIndex,
           };
+          return normalizeVisualCursor(newCursor, blocks);
         }
       }
     }
   }
+  return null;
+}
+
+export function normalizeVisualCursor(cursor: VisualCursor, blocks: VisualBlock[]) {
+  const block = blocks[cursor.blockI];
+  const line = block.lines[cursor.lineI];
+  if (cursor.lineI < block.lines.length - 1) {
+    if (cursor.spanI === line.spans.length - 1 && cursor.charI === line.spans[cursor.spanI].text.length) {
+      return { blockI: cursor.blockI, lineI: cursor.lineI + 1, spanI: 0, charI: 0 };
+    }
+  }
+  return cursor;
 }
 
 export function getRelativePosition(pos: Vec2, bounds: RelativeBounds) {
@@ -242,7 +250,7 @@ export function getRelativePosition(pos: Vec2, bounds: RelativeBounds) {
   return subtract(rotate(pos, center, -bounds.rotation), bounds);
 }
 
-export function parseHit(pos: Vec2, blocks: VisualText) {
+export function parseHit(pos: Vec2, blocks: VisualText): VisualCursor {
   const blockI = scanText(blocks, pos.y);
   const block = blocks[blockI];
   const lineI = clamp1(
@@ -252,25 +260,22 @@ export function parseHit(pos: Vec2, blocks: VisualText) {
   );
   const line = block.lines[lineI];
   const spanI = scanLine(line, pos.x);
-  const isFinalSpan =
-    spanI === line.spans.length - 1 && lineI === block.lines.length - 1;
-  const charI = scanSpan(line.spans[spanI], pos.x, isFinalSpan);
+  const charI = scanSpan(line.spans[spanI], pos.x);
 
   const cursor = { blockI, lineI, spanI, charI };
-  return toModel(cursor, blocks);
+  return cursor;
 }
 
-export function getVisualPosition(pos: ModelCursor, blocks: VisualText) {
-  const visualCursor = toVisual(pos, blocks);
-  if (!visualCursor) return null;
+export function getVisualPosition(cursor: VisualCursor, blocks: VisualText) {
+  if (!cursor) return null;
 
-  const block = blocks[visualCursor.blockI];
-  const line = block?.lines[visualCursor.lineI];
-  const span = line?.spans[visualCursor.spanI];
+  const block = blocks[cursor.blockI];
+  const line = block?.lines[cursor.lineI];
+  const span = line?.spans[cursor.spanI];
   if (!span) return null;
 
-  const x = span.x + span.charOffsets[visualCursor.charI];
-  const y = block.y + visualCursor.lineI * block.style.lineHeight;
+  const x = span.x + span.charOffsets[cursor.charI];
+  const y = block.y + cursor.lineI * block.style.lineHeight;
 
   return { x, y };
 }
@@ -320,9 +325,7 @@ export function moveCursorLine(cursor: ModelCursor, desiredX: number, blocks: Vi
   const line = block.lines[lineI];
   const spanI = scanLine(line, desiredX);
   const span = line.spans[spanI];
-  const isFinalSpan =
-    spanI === line.spans.length - 1 && lineI === block.lines.length - 1;
-  const charI = scanSpan(span, desiredX, isFinalSpan);
+  const charI = scanSpan(span, desiredX);
 
   return toModel({ blockI, lineI, spanI, charI }, blocks);
 }

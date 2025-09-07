@@ -1,8 +1,14 @@
-import { normalizeSelection } from "../model/text";
 import type { RelativeBounds } from "../types";
 import { expandToPath } from "../util";
-import { getOffset, setFont, toVisual } from "./textUtil";
-import type { Selection, VisualCursor, VisualSpan, VisualText } from "./types";
+import { getOffset, setFont } from "./textUtil";
+import type { VisualCursor, VisualSelection, VisualSpan, VisualText } from "./types";
+
+interface HighlightProps {
+  selection: VisualSelection;
+  color?: string;
+  blocks: VisualText;
+  bounds: RelativeBounds;
+}
 
 function isEndBeforeStart(start: VisualCursor, end: VisualCursor) {
   if (end.blockI !== start.blockI) return end.blockI < start.blockI;
@@ -35,23 +41,14 @@ function generateHighlightSegment(
   return { x: span.x, width: span.width };
 }
 
-interface HighlightProps {
-  selection: Selection;
-  color?: string;
-  blocks: VisualText;
-  bounds: RelativeBounds;
-}
-
-function toVisualSelection(selection: Selection, blocks: VisualText) {
-  return {
-    start: selection.start ? toVisual(selection.start, blocks) : null,
-    end: selection.end ? toVisual(selection.end, blocks) : null
-  };
+export function normalizeSelection(selection: VisualSelection) {
+  let { start, end } = selection;
+  if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
+  return { start, end };
 }
 
 function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
-  let modelSelection = normalizeSelection(selection);
-  let { start, end } = toVisualSelection(modelSelection, blocks);
+  let { start, end } = normalizeSelection(selection);
 
   const center = {
     x: bounds.x + bounds.width / 2,
