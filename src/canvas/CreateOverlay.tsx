@@ -5,9 +5,9 @@ import type { Bounds, Vec2 } from "../types";
 import Box from "../elements/Box";
 import Speech from "../elements/Speech";
 import Line from "../elements/Line";
-import AppContext from "../AppContext";
 import { add, mutate, scale, subtract } from "../util";
 import { createComponentFromBounds } from "../scene/modify";
+import useEditorStore from "../stores/editor";
 
 function getTailVert(verts: Vec2[]) {
   const dir = mutate(
@@ -72,7 +72,9 @@ function resolve(type: string, bounds: Bounds) {
 const CreateOverlay = () => {
   const { toSVGSpace, registerHandler, clearHandler } =
     useContext(CanvasContext);
-  const { createType, setMode, setSelected } = useContext(AppContext);
+  const setSelected = useEditorStore(state => state.setSelected);
+  const setMode = useEditorStore(state => state.setMode);
+  const createType = useEditorStore(state => state.createType);
 
   const [verts, setVerts] = useState<Bounds["verts"]>([]);
 

@@ -96,7 +96,7 @@ function splitSpan(id: string, cursor: ModelCursor) {
 
   modifyComponentProp(id, `content.blocks.${cursor.blockI}.spans`, newSpans);
 
-  return { blockI: cursor.blockI, spanI: cursor.spanI + 1, charI: 0 };
+  return { blockI: cursor.blockI, spanI: cursor.spanI, charI: leftSpan.text.length };
 }
 
 function splitSelection(id: string, selection: ModelSelection) {
@@ -124,8 +124,8 @@ export function deleteSelection(id: string, selection: ModelSelection) {
   const endBlock = blocks[end.blockI];
 
   const newSpans = [
-    ...startBlock.spans.slice(0, start.spanI),
-    ...endBlock.spans.slice(end.spanI),
+    ...startBlock.spans.slice(0, start.spanI + 1),
+    ...endBlock.spans.slice(end.spanI + 1),
   ];
 
   const newBlocks = [
@@ -279,6 +279,7 @@ function moveCursor(id: string, pos: ModelCursor | null, amount: number) {
 }
 
 export function equals(c1: ModelCursor | null, c2: ModelCursor | null) {
+  if (c1 == null && c2 == null) return true;
   if (c1 == null || c2 == null) return false;
   return (
     c1.blockI === c2.blockI && c1.charI === c2.charI && c1.spanI === c2.spanI

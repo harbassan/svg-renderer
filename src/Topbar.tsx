@@ -26,18 +26,20 @@ import { getComponentProp, removeComponent } from "./scene/scene";
 import FontInput from "./wrapper/FontInput";
 import ToggleInput from "./wrapper/ToggleInput";
 import MultiInput from "./wrapper/MultiInput";
-import { useContext, useEffect } from "react";
-import AppContext from "./AppContext";
+import { useEffect } from "react";
 import { redo, undo } from "./scene/history";
 import {
   modifyComponentProp,
   parseComponent,
   stringifyComponent,
 } from "./scene/modify";
+import useEditorStore from "./stores/editor";
 
 function Topbar() {
-  const { selected, setSelected, setMode, setCreateType } =
-    useContext(AppContext);
+  const selected = useEditorStore(state => state.selected);
+  const setSelected = useEditorStore(state => state.setSelected);
+  const setMode = useEditorStore(state => state.setMode);
+  const setCreateType = useEditorStore(state => state.setCreateType);
 
   useEffect(() => {
     function onCopy(e: ClipboardEvent) {
@@ -74,6 +76,7 @@ function Topbar() {
   }, []);
 
   function remove() {
+    if (!selected) return;
     removeComponent(selected);
     setSelected("");
   }

@@ -208,6 +208,7 @@ export function toModel(cursor: VisualCursor | null, blocks: VisualText) {
 
 export function toVisual(cursor: ModelCursor | null, blocks: VisualText) {
   if (cursor == null) return null;
+  console.log(cursor);
   const visualBlock = blocks[cursor.blockI];
   for (let i = 0; i < visualBlock?.lines.length; i++) {
     const line = visualBlock?.lines[i];
@@ -375,15 +376,22 @@ export function moveCursorVisual(
       // moving right
       if (
         charI <
-        (spanI < line.spans.length - 1
-          ? span.text.length
-          : span.text.length - 1)
+        (spanI === line.spans.length - 1 && lineI < block.lines.length - 1
+          ? span.text.length - 1
+          : span.text.length)
       ) {
         charI++;
         amount--;
       } else if (spanI < line.spans.length - 1) {
         spanI++;
-        charI = 1;
+        const span = line.spans[spanI];
+        if (span.text.length === 1) {
+          lineI++;
+          spanI = 0;
+          charI = 0;
+        } else {
+          charI = 1;
+        }
         amount--;
       } else if (lineI < block.lines.length - 1) {
         lineI++;
@@ -410,8 +418,10 @@ export function moveCursorVisual(
         amount++;
       } else if (lineI > 0) {
         lineI--;
-        spanI = block.lines[lineI].spans.length - 1;
-        charI = block.lines[lineI].spans[spanI].text.length - 1;
+        const line = block.lines[lineI];
+        const span = line.spans[line.spans.length - 1];
+        spanI = span.text.length > 1 ? line.spans.length - 1 : line.spans.length - 2;
+        charI = span.text.length > 1 ? span.text.length - 1 : line.spans[spanI].text.length;
         amount++;
       } else if (blockI > 0) {
         blockI--;

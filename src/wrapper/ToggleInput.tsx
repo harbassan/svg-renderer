@@ -1,7 +1,7 @@
-import { useContext, useEffect, useState } from "react";
-import AppContext from "../AppContext";
+import { useEffect, useState } from "react";
 import { getComponentProp } from "../scene/scene";
 import { modifyComponentProp } from "../scene/modify";
+import useEditorStore from "../stores/editor";
 
 function ToggleInput({
   children,
@@ -13,7 +13,7 @@ function ToggleInput({
   enabled: string;
   disabled: string;
 }>) {
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
 
   const [value, setValue] = useState(
     getComponentProp(selected, prop) === enabled,

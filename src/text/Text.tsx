@@ -1,7 +1,6 @@
 import { useContext, useState, useRef, useEffect, useMemo } from "react";
 import type { TextShape } from "../types";
 import CanvasContext from "../canvas/CanvasContext";
-import AppContext from "../AppContext";
 import {
   buildBlocks,
   buildStyle,
@@ -30,6 +29,8 @@ import {
   normalizeSelection,
 } from "../scene/text";
 import Rectangle from "../canvas/Rectangle";
+import useEditorStore from "../stores/editor";
+import { fastIsEqual } from "fast-is-equal";
 
 let isSelecting = false;
 let desiredColumn: number | null = null;
@@ -68,12 +69,8 @@ function buildGroups(blocks: VisualText) {
 function Text(component: TextShape) {
   const { toSVGSpace, registerHandler, clearHandler } =
     useContext(CanvasContext);
-  const { setSelected } = useContext(AppContext);
-
-  const selection = useRef<ModelSelection>({
-    start: null,
-    end: null,
-  });
+  const setSelected = useEditorStore(state => state.setSelected);
+  const setSelection = useEditorStore(state => state.setSelection);
 
   const [visual, setVisual] = useState<VisualSelection>({
     start: null,
@@ -97,13 +94,13 @@ function Text(component: TextShape) {
 
     if (isVisualSelection(next)) {
       const { start, end } = next;
-      selection.current = {
+      setSelection({
         start: toModel(start, blocks),
         end: toModel(end, blocks),
-      };
+      });
       setVisual(next);
     } else {
-      selection.current = next;
+      setSelection(next);
     }
   }
 
@@ -113,10 +110,10 @@ function Text(component: TextShape) {
     setVisual((prev) => {
       const next = updater(prev);
       if (next == null) return prev;
-      selection.current = {
+      setSelection({
         start: toModel(next.start, blocks),
         end: toModel(next.end, blocks),
-      };
+      });
       return next;
     });
   }
@@ -126,7 +123,7 @@ function Text(component: TextShape) {
     if (visual.start && !visual.end && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [selection]);
+  }, [visual]);
 
   const { bounds } = component;
   const center = {
@@ -139,10 +136,26 @@ function Text(component: TextShape) {
     [component],
   );
 
-  if (!equals(selection.current.start, toModel(visual.start, blocks))) {
+  function isEquivalent(visual: VisualSelection, model: ModelSelection, blocks: VisualText) {
+    const startEq =
+      visual.start == null
+        ? model.start == null
+        : model.start != null &&
+        equals(model.start, toModel(visual.start, blocks));
+    const endEq =
+      visual.end == null
+        ? model.end == null
+        : model.end != null &&
+        equals(model.end, toModel(visual.end, blocks));
+    return startEq && endEq;
+  }
+
+  const selection = useEditorStore.getState().selection;
+  if (selection && !isEquivalent(visual, selection, blocks)) {
+    console.log("hi");
     genSelection({
-      start: toVisual(selection.current.start, blocks),
-      end: toVisual(selection.current.end, blocks),
+      start: toVisual(selection.start, blocks),
+      end: toVisual(selection.end, blocks),
     });
   }
 
@@ -168,7 +181,7 @@ function Text(component: TextShape) {
   }
 
   function handleMouseDownCapture() {
-    selection.current = { start: null, end: null };
+    setSelection({ start: null, end: null });
     setVisual({ start: null, end: null });
   }
 
@@ -195,20 +208,23 @@ function Text(component: TextShape) {
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     e.preventDefault();
 
-    const { start, end } = selection.current;
+    const selection = useEditorStore.getState().selection;
+    if (selection == null) return;
+
+    const { start, end } = selection;
     if (start == null) return;
 
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       // insert character at cursor
       const newCursor = end
-        ? insertSelection(component.id, selection.current, e.key)
+        ? insertSelection(component.id, selection, e.key)
         : insertChar(component.id, start, e.key);
       genSelection({ start: newCursor, end: null });
     } else if (e.key === "Backspace") {
       // delete character before cursor
       const newCursor = !end
         ? deleteChar(component.id, start)
-        : deleteSelection(component.id, selection.current);
+        : deleteSelection(component.id, selection);
       genSelection({ start: newCursor, end: null });
     } else if (e.key === "Enter") {
       // create a new block at cursor

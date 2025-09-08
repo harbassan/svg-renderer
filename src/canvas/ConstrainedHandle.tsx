@@ -2,8 +2,8 @@ import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
 import type { Bounds, Scene, Vec2 } from "../types";
 import { getBoxCenter, rotate, subtract, translate } from "../util";
-import AppContext from "../AppContext";
 import { modifyComponentBounds } from "../scene/modify";
+import useEditorStore from "../stores/editor";
 
 interface Props {
   x: number;
@@ -35,7 +35,7 @@ const ConstrainedHandle = ({
 }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
 
   const bounds = scene?.components[selected].bounds;
   const verts = bounds.verts;

@@ -12,7 +12,7 @@ import {
   subtract,
   translate,
 } from "../util";
-import AppContext from "../AppContext";
+import useEditorStore from "../stores/editor";
 
 interface Props {
   x: number;
@@ -44,7 +44,7 @@ const ConstrainedSpeechHandle = ({
 }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
 
   const bounds = scene?.components[selected].bounds;
   const verts = bounds.verts;

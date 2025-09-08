@@ -1,14 +1,14 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import AppContext from "../AppContext";
+import { useEffect, useRef, useState } from "react";
 import { Chrome, type ColorResult } from "@uiw/react-color";
 import { getComponentProp } from "../scene/scene";
 import { modifyComponentProp } from "../scene/modify";
+import useEditorStore from "../stores/editor";
 
 function ChromePicker({
   children,
   prop,
 }: React.PropsWithChildren<{ prop: string }>) {
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
 
   const [color, setColor] = useState(
     getComponentProp(selected, prop) || "#ffffffff",

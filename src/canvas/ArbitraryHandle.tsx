@@ -3,7 +3,7 @@ import CanvasContext from "./CanvasContext";
 import { modifyComponentBounds } from "../scene/modify";
 import type { Bounds, Scene, Vec2 } from "../types";
 import { getBoxCenter, rotate, subtract, translate } from "../util";
-import AppContext from "../AppContext";
+import useEditorStore from "../stores/editor";
 
 interface Props {
   x: number;
@@ -23,7 +23,7 @@ function modifyVerts(verts: Vec2[], x: number, y: number, v: Vec2) {
 const ArbitraryHandle = ({ x, y, scene, setBounds, isTransforming }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
 
   const bounds = scene?.components[selected].bounds;
   const verts = bounds.verts;

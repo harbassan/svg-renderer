@@ -1,14 +1,14 @@
-import { useContext, useEffect, useState, type ReactNode } from "react";
-import AppContext from "../AppContext";
+import { useEffect, useState, type ReactNode } from "react";
 import { getComponentProp } from "../scene/scene";
 import { modifyComponentProp } from "../scene/modify";
+import useEditorStore from "../stores/editor";
 
 function MultiInput({
   children,
   prop,
   options,
 }: React.PropsWithChildren<{ prop: string; options: string[] }>) {
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
 
   const [value, setValue] = useState(
     getComponentProp(selected, prop) ?? options[0],

@@ -10,7 +10,7 @@ import Box from "../elements/Box";
 import Image from "../elements/Image";
 import Line from "../elements/Line";
 import CreateOverlay from "./CreateOverlay";
-import AppContext from "../AppContext";
+import useEditorStore from "../stores/editor";
 
 function resolve(component: Component) {
   switch (component.type) {
@@ -32,7 +32,8 @@ function resolve(component: Component) {
 function Canvas() {
   const scene = useScene();
 
-  const { mode, setSelected } = useContext(AppContext);
+  const setSelected = useEditorStore(state => state.setSelected);
+  const mode = useEditorStore(state => state.mode);
 
   const dragHandlerRef = useRef<DragHandlerRef>(null);
   const canvasRef = useRef<SVGSVGElement | null>(null);

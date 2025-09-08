@@ -15,9 +15,9 @@ import { getBoxCenter, subtract, translate } from "../util";
 import Speech from "../elements/Speech";
 import Line from "../elements/Line";
 import LineHandles from "./LineHandles";
-import AppContext from "../AppContext";
 import SpeechHandles from "./SpeechHandles";
 import Rectangle from "./Rectangle";
+import useEditorStore from "../stores/editor";
 
 export interface DragHandlerRef {
   startDrag: (e: MouseEvent, id: string) => void;
@@ -72,7 +72,7 @@ const Overlay = ({
 }) => {
   const { toSVGSpace, registerHandler, clearHandler } =
     useContext(CanvasContext);
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
   const component = scene?.components[selected];
 
   const [bounds, setBounds] = useState<Bounds>({ verts: [], rotation: 0 });

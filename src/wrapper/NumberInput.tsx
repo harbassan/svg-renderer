@@ -1,11 +1,11 @@
-import { useContext, useEffect, useState } from "react";
-import AppContext from "../AppContext";
+import { useEffect, useState } from "react";
 import { getComponentProp } from "../scene/scene";
 import { modifyComponentProp } from "../scene/modify";
 import { Minus, Plus } from "lucide-react";
+import useEditorStore from "../stores/editor";
 
 function NumberInput({ prop }: { prop: string }) {
-  const { selected } = useContext(AppContext);
+  const selected = useEditorStore(state => state.selected)!;
 
   const [value, setValue] = useState(getComponentProp(selected, prop) || 0);
 
