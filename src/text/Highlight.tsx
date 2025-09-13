@@ -63,7 +63,6 @@ function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
     const isStartBlock = i === start.blockI;
     for (let j = isStartBlock ? start.lineI : 0; j < block.lines.length; j++) {
       const line = block.lines[j];
-      const offset = getOffset(line, bounds.width, block.style.alignment);
       const isStartLine = j === start.lineI;
       for (
         let k = isStartLine && isStartBlock ? start.spanI : 0;
@@ -80,15 +79,15 @@ function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
           isStart,
           isEnd,
         );
-        const y = bounds.y + block.y + j * block.style.lineHeight;
+        const y = bounds.y + block.y + line.y;
 
         highlights.push(
           <path
             d={expandToPath({
-              x: x + offset + bounds.x,
+              x: x + line.x + bounds.x,
               y,
               width,
-              height: block.style.lineHeight,
+              height: line.height,
               origin: center,
               rotation: bounds.rotation,
             })}

@@ -20,59 +20,35 @@ export function insertChar(id: string, pos: ModelCursor, char: string) {
 }
 
 export function deleteChar(id: string, pos: ModelCursor) {
-  if (!pos.blockI && !pos.spanI && !pos.charI) return pos;
+  if (!pos.blockI && !pos.spanI && !pos.charI) return pos; // start of text
 
-  const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
   const newCursor = moveCursor(id, pos, -1);
 
+  const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
+  const spans = blocks[pos.blockI].spans;
+
   if (newCursor.blockI === pos.blockI && newCursor.spanI === pos.spanI) {
-    const spans: ModelSpan[] = getComponentProp(
-      id,
-      `content.blocks.${pos.blockI}.spans`,
-    );
+    // within span
     const target = spans[pos.spanI].text;
     const modified = target.slice(0, pos.charI - 1) + target.slice(pos.charI);
-    modifyComponentProp(
-      id,
-      `content.blocks.${pos.blockI}.spans.${pos.spanI}.text`,
-      modified,
-    );
-    return moveCursor(id, pos, -1);
-  } else if (newCursor.blockI === pos.blockI) {
-    const spans: ModelSpan[] = getComponentProp(
-      id,
-      `content.blocks.${pos.blockI}.spans`,
-    );
+    spans[pos.spanI].text = modified;
+  } else if (newCursor.blockI === pos.blockI) { // at span boundary
     const target = spans[pos.spanI - 1].text;
-    const modified = target.slice(0, target.length - 1);
-    if (modified.length === 0) {
-      spans.splice(pos.spanI - 1, 1);
-      modifyComponentProp(id, `content.blocks.${pos.blockI}.spans`, spans);
-      return { blockI: pos.blockI, spanI: pos.spanI - 1, charI: pos.charI };
-    } else {
-      modifyComponentProp(
-        id,
-        `content.blocks.${pos.blockI}.spans.${pos.spanI - 1}.text`,
-        modified,
-      );
-      return pos;
+    if (newCursor.charI === target.length) { // first char in span
+      const modified = spans[pos.spanI].text.slice(1);
+      spans[pos.spanI].text = modified;
+    } else { // last char in prev span
+      const modified = target.slice(0, target.length - 1);
+      spans[pos.spanI - 1].text = modified;
     }
-  } else {
-    const prev = blocks[pos.blockI - 1];
-    const prevSpanLength = prev.spans.length;
-    const current = blocks[pos.blockI];
+  } else { // at block boundary
     blocks.splice(pos.blockI, 1);
-    blocks[pos.blockI - 1].spans = prev.spans.concat(current.spans);
-    modifyComponentProp(id, `content.blocks`, normalizeBlocks(blocks));
-    if (current.spans.length === 1 && current.spans[0].text.length === 0) {
-      return {
-        blockI: pos.blockI - 1,
-        spanI: prevSpanLength - 1,
-        charI: prev.spans[prevSpanLength - 1].text.length,
-      };
-    }
-    return { blockI: pos.blockI - 1, spanI: prevSpanLength, charI: 0 };
+    blocks[pos.blockI - 1].spans.push(...spans);
   }
+
+  modifyComponentProp(id, `content.blocks`, normalizeBlocks(blocks));
+
+  return newCursor;
 }
 
 function splitSpan(id: string, cursor: ModelCursor) {
@@ -228,10 +204,8 @@ function normalizeCursor(blocks: ModelBlock[], pos: ModelCursor) {
   return pos;
 }
 
-function moveCursor(id: string, pos: ModelCursor | null, amount: number) {
-  if (pos == null) return { blockI: 0, spanI: 0, charI: 0 };
-
-  let { blockI, spanI, charI } = pos;
+function moveCursor(id: string, cursor: ModelCursor, amount: number) {
+  let { blockI, spanI, charI } = cursor;
   const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
 
   while (amount !== 0) {
@@ -240,31 +214,31 @@ function moveCursor(id: string, pos: ModelCursor | null, amount: number) {
 
     if (amount > 0) {
       // moving right
-      if (charI < span.text.length) {
+      if (charI < span.text.length) { // within span
         charI++;
         amount--;
-      } else if (spanI < block.spans.length - 1) {
+      } else if (spanI < block.spans.length - 1) { // at span boundary
         spanI++;
         charI = 1;
         amount--;
-      } else if (blockI < blocks.length - 1) {
+      } else if (blockI < blocks.length - 1) { // at block boundary
         blockI++;
         spanI = 0;
         charI = 0;
         amount--;
-      } else {
-        break; // end of container
+      } else { // end of container
+        break;
       }
     } else {
       // moving left
-      if (charI > 0) {
+      if (charI > 0) { // within span
         charI--;
         amount++;
-      } else if (spanI > 0) {
+      } else if (spanI > 0) { // at span boundary
         spanI--;
         charI = block.spans[spanI].text.length - 1;
         amount++;
-      } else if (blockI > 0) {
+      } else if (blockI > 0) { // at block boundary
         blockI--;
         spanI = blocks[blockI].spans.length - 1;
         charI = blocks[blockI].spans[spanI].text.length;

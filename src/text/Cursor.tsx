@@ -20,12 +20,13 @@ function Cursor({
 
   const position = add(relativePosition, bounds);
   const block = blocks[start.blockI];
+  const line = block.lines[start.lineI];
 
   const box = {
     x: position.x,
     y: position.y,
     width: 2,
-    height: block.style.lineHeight,
+    height: line.height,
     rotation: bounds.rotation,
   };
   const origin = {

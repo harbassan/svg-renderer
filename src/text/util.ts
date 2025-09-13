@@ -1,5 +1,5 @@
-import type { BaseTextStyle, RelativeBounds, TextShape, Vec2 } from "../types";
-import { clamp1, rotate, subtract } from "../util";
+import type { BaseTextStyle, ModelBlock, ModelSpan, RelativeBounds, SpanTextStyle, TextShape, Vec2 } from "../types";
+import { rotate, subtract } from "../util";
 import type {
   ModelCursor,
   VisualBlock,
@@ -15,7 +15,7 @@ const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const fallback: BaseTextStyle = {
   alignment: "center",
-  lineHeight: 16,
+  lineHeight: 1.1,
   fontFamily: "Arial",
   fontSize: 16,
   fontWeight: "normal",
@@ -26,12 +26,12 @@ const fallback: BaseTextStyle = {
 };
 
 export function measure(text: string) {
-  return ctx.measureText(text).width;
+  return ctx.measureText(text);
 }
 
 export function buildFont(styles: Partial<BaseTextStyle>) {
   const { fontFamily, fontSize, fontWeight, fontStyle, lineHeight } = styles;
-  return `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight}px "${fontFamily}"`;
+  return `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight! * fontSize!}px "${fontFamily}"`;
 }
 
 export function setFont(style?: Partial<BaseTextStyle>) {
@@ -55,110 +55,220 @@ export function buildStyle(derived: Partial<BaseTextStyle>) {
   };
 }
 
-function generateOffsets(text: string) {
+function generateOffsets(text: string, style: BaseTextStyle) {
+  setFont(style);
   const offsets = [];
   for (let i = 0; i <= text.length; i++) {
-    offsets.push(measure(text.slice(0, i)));
+    offsets.push(measure(text.slice(0, i)).width);
   }
   return offsets;
 }
 
-export function buildBlocks(component: TextShape) {
-  console.log("building visual blocks");
-  let offset = 0;
-  return component.blocks.map((modelBlock) => {
-    const blockStyle = squash(component.style, modelBlock.style);
-    const y = offset;
+function generateLineOffset(alignment: string, width: number, lineWidth: number) {
+  if (!alignment || alignment === "left") return 0;
+  const remaining = width - lineWidth;
+  if (alignment === "center") return remaining / 2;
+  return remaining;
+}
 
-    const visualBlock: VisualBlock = {
-      lines: [],
-      y,
-      style: blockStyle,
-      height: 0,
-    };
-    let line: VisualLine = {
-      spans: [],
-      y: offset,
-      height: blockStyle.lineHeight,
-    };
-    let lineWidth = 0;
+function createNewLine(props?: Partial<VisualLine>): VisualLine {
+  return {
+    spans: [],
+    y: 0,
+    x: 0,
+    width: 0,
+    height: 0,
+    baseline: 0,
+    maxFontSize: 0,
+    maxDescent: 0,
+    ...props
+  };
+}
 
-    for (let spanIndex = 0; spanIndex < modelBlock.spans.length; spanIndex++) {
-      const span = modelBlock.spans[spanIndex];
-      const spanStyle = squash(blockStyle, span.style);
-      setFont(spanStyle);
+interface SpanRef {
+  span: ModelSpan;
+  text: string;
+  index: number;
+  start: number;
+}
 
-      const tokens = span.text.split(/(\s+)/);
-      let currentText = "";
-      let currentWidth = 0;
-      let currentIndex = 0;
-      let startIndex = 0;
+function measureText(text: string, style: BaseTextStyle) {
+  setFont(style);
+  return measure(text);
+}
 
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (token === "" && i !== tokens.length - 1) continue;
+function buildVisualLines(spans: ModelSpan[], maxWidth: number, blockStyle: BaseTextStyle) {
+  const lines: VisualLine[] = [];
+  const { alignment, lineHeight } = blockStyle;
+  let currentLine = createNewLine();
 
-        const tokenWidth = measure(token);
-        const isSpace = /^\s+$/.test(token);
+  let wordBuffer: SpanRef[] = [];
 
-        if (
-          !isSpace &&
-          lineWidth + currentWidth + tokenWidth > component.bounds.width
-        ) {
-          if (currentText.length > 0) {
-            line.spans.push({
-              text: currentText,
-              charOffsets: generateOffsets(currentText),
-              style: spanStyle,
-              width: currentWidth,
-              x: lineWidth,
-              parentId: spanIndex,
-              startIndex,
-            });
-          }
+  function flushWordBuffer() {
+    if (wordBuffer.length === 0) return;
 
-          if (line.spans.length > 0) {
-            visualBlock.lines.push(line);
-            line = {
-              spans: [],
-              y: offset + visualBlock.lines.length * blockStyle.lineHeight,
-              height: blockStyle.lineHeight,
-            };
-            lineWidth = 0;
-          }
+    const measuredParts = wordBuffer.map(ref => {
+      const style = squash(blockStyle, ref.span.style);
+      const metrics = measureText(ref.text, style);
+      return { ref, style, metrics };
+    });
+    const wordWidth = measuredParts.reduce((sum, p) => sum + p.metrics.width, 0);
 
-          currentText = token;
-          currentWidth = tokenWidth;
-          startIndex = currentIndex;
-        } else {
-          currentText += token;
-          currentWidth += tokenWidth;
-        }
+    if (currentLine.width + wordWidth > maxWidth && currentLine.width > 0) {
+      currentLine.x = generateLineOffset(alignment, maxWidth, currentLine.width);
+      currentLine.height = lineHeight * currentLine.maxFontSize;
+      currentLine.baseline = currentLine.height - currentLine.maxDescent;
+      lines.push(currentLine);
 
-        currentIndex += token.length;
-      }
-
-      // always triggers if span is not empty
-      line.spans.push({
-        text: currentText,
-        charOffsets: generateOffsets(currentText),
-        style: spanStyle,
-        width: currentWidth,
-        x: lineWidth,
-        parentId: spanIndex,
-        startIndex,
-      });
-      lineWidth += currentWidth;
+      currentLine = createNewLine({ y: currentLine.y + currentLine.height });
     }
 
-    if (line.spans.length > 0) visualBlock.lines.push(line);
-    else visualBlock.lines.push({ spans: [], y: 0, height: 0 }); // only triggers if all spans are empty
+    for (const part of measuredParts) {
+      const { ref, style, metrics } = part;
+      currentLine.spans.push({
+        text: ref.text,
+        charOffsets: generateOffsets(ref.text, style),
+        style,
+        width: metrics.width,
+        x: currentLine.width,
+        parentId: ref.index,
+        startIndex: ref.start,
+      });
+      currentLine.width += metrics.width;
 
-    visualBlock.height = visualBlock.lines.length * blockStyle.lineHeight + 16;
-    offset += visualBlock.height;
+      const descent = measure("Mg").actualBoundingBoxDescent;
+      if (descent > currentLine.maxDescent) currentLine.maxDescent = descent;
+      if (style.fontSize > currentLine.maxFontSize) currentLine.maxFontSize = style.fontSize;
+    }
 
-    return visualBlock;
-  });
+    wordBuffer = [];
+  }
+
+  for (let j = 0; j < spans.length; j++) {
+    const span = spans[j];
+    const tokens = span.text.split(/(\s+)/);
+
+    let offset = 0;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (token === "") continue;
+
+      if (/\s/.test(token)) {
+        flushWordBuffer();
+
+        const style = squash(blockStyle, span.style);
+        const spaceWidth = measureText(token, style).width;
+        currentLine.spans.push({
+          text: token,
+          style,
+          width: spaceWidth,
+          x: currentLine.width,
+          parentId: j,
+          startIndex: offset,
+          charOffsets: generateOffsets(token, style)
+        });
+        currentLine.width += spaceWidth;
+
+        const descent = measure("Mg").actualBoundingBoxDescent;
+        if (descent > currentLine.maxDescent) currentLine.maxDescent = descent;
+        if (style.fontSize > currentLine.maxFontSize) currentLine.maxFontSize = style.fontSize;
+      } else {
+        wordBuffer.push({ span, text: token, index: j, start: offset })
+      }
+      offset += token.length;
+    }
+
+  }
+
+  if (spans.length === 1 && spans[0].text.length === 0) wordBuffer.push({ span: spans[0], text: "", index: 0, start: 0 });
+
+  flushWordBuffer();
+
+  if (currentLine.spans.length > 0) {
+    currentLine.x = generateLineOffset(alignment, maxWidth, currentLine.width);
+    currentLine.height = lineHeight * currentLine.maxFontSize;
+    currentLine.baseline = currentLine.height - currentLine.maxDescent;
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
+// function buildLines(lines: VisualLine[], iter: [ModelSpan, number], spanStyle: BaseTextStyle, tail: Tail, maxWidth: number) {
+//   let line = lines.length ? lines.pop()! : createNewLine();
+//
+//   const current = { text: "", width: 0, index: 0, startIndex: 0 }
+//   const [span, i] = iter;
+//
+//   setFont(spanStyle);
+//   const { fontSize, alignment, lineHeight } = spanStyle;
+//   if (fontSize > tail.maxFontSize) tail.maxFontSize = fontSize;
+//
+//   const descent = measure("Mg").actualBoundingBoxDescent;
+//   if (descent > tail.maxDescent) tail.maxDescent = descent;
+//
+//   const tokens = span.text.split(/(\s+)/);
+//
+//   for (let i = 0; i < tokens.length; i++) {
+//     const token = tokens[i];
+//     if (token === "" && i !== tokens.length - 1) continue;
+//
+//     const push = buildSpans(line, token, descent, tail, i, current, spanStyle, maxWidth);
+//     if (push) {
+//       lines.push(line);
+//       line = createNewLine({ y: line.y + line.height });
+//     }
+//
+//     current.index += token.length;
+//   }
+//
+//   // always triggers if span is not empty
+//   pushSpan(line, current, spanStyle, i);
+//
+//   line.width += current.width;
+//   line.x = generateLineOffset(alignment, maxWidth, line.width);
+//   line.height = lineHeight * tail.maxFontSize;
+//   line.baseline = line.height - tail.maxDescent;
+//   lines.push(line);
+// }
+
+function buildBlock(block: ModelBlock, offset: number, maxWidth: number, blockStyle: BaseTextStyle) {
+  const visualBlock: VisualBlock = {
+    lines: [],
+    y: offset,
+    style: blockStyle,
+    height: 0,
+  };
+
+  const lines = buildVisualLines(block.spans, maxWidth, blockStyle);
+
+  if (!lines.length) {
+    const height = blockStyle.fontSize * blockStyle.lineHeight;
+    lines.push(createNewLine({ height }));
+  }
+
+  const { y, height } = lines[lines.length - 1];
+  visualBlock.height = y + height;
+  visualBlock.lines = lines;
+
+  return visualBlock;
+}
+
+export function buildBlocks(component: TextShape) {
+  console.log("building visual blocks");
+
+  const { blocks, bounds, style } = component;
+  const text: VisualText = [];
+
+  let offset = 0;
+  for (let i = 0; i < blocks.length; i++) {
+    const squashed = squash(style, blocks[i].style);
+    const visual = buildBlock(blocks[i], offset, bounds.width, squashed);
+    offset += visual.height;
+    text.push(visual);
+  }
+
+  return text;
 }
 
 export function scanText(text: VisualText, y: number) {
@@ -169,10 +279,19 @@ export function scanText(text: VisualText, y: number) {
   return text.length - 1;
 }
 
+
+export function scanBlock(block: VisualBlock, y: number) {
+  for (let i = 0; i < block.lines.length; i++) {
+    const line = block.lines[i];
+    if (y - block.y < line.height + line.y) return i;
+  }
+  return block.lines.length - 1;
+}
+
 export function scanLine(line: VisualLine, x: number) {
   for (let i = 0; i < line.spans.length; i++) {
     const span = line.spans[i];
-    if (x < span.width + span.x) return i;
+    if (x < span.width + span.x + line.x) return i;
   }
   return line.spans.length - 1;
 }
@@ -183,13 +302,6 @@ export function scanSpan(span: VisualSpan, x: number) {
     if (offset > x - span.x) return i;
   }
   return span.text.length;
-}
-
-export function getOffset(line: VisualLine, width: number, alignment: string) {
-  if (!alignment || alignment === "left") return 0;
-  const remaining = width - line.spans.reduce((w, span) => w + span.width, 0);
-  if (alignment === "center") return remaining / 2;
-  return remaining;
 }
 
 export function toModel(cursor: VisualCursor | null, blocks: VisualText) {
@@ -208,7 +320,6 @@ export function toModel(cursor: VisualCursor | null, blocks: VisualText) {
 
 export function toVisual(cursor: ModelCursor | null, blocks: VisualText) {
   if (cursor == null) return null;
-  console.log(cursor);
   const visualBlock = blocks[cursor.blockI];
   for (let i = 0; i < visualBlock?.lines.length; i++) {
     const line = visualBlock?.lines[i];
@@ -266,14 +377,10 @@ export function getRelativePosition(pos: Vec2, bounds: RelativeBounds) {
 export function parseHit(pos: Vec2, blocks: VisualText): VisualCursor {
   const blockI = scanText(blocks, pos.y);
   const block = blocks[blockI];
-  const lineI = clamp1(
-    Math.floor((pos.y - block.y) / block.style.lineHeight),
-    0,
-    block.lines.length - 1,
-  );
+  const lineI = scanBlock(block, pos.y);
   const line = block.lines[lineI];
   const spanI = scanLine(line, pos.x);
-  const charI = scanSpan(line.spans[spanI], pos.x);
+  const charI = scanSpan(line.spans[spanI], pos.x - line.x);
 
   const cursor = { blockI, lineI, spanI, charI };
   return cursor;
@@ -287,8 +394,8 @@ export function getVisualPosition(cursor: VisualCursor, blocks: VisualText) {
   const span = line?.spans[cursor.spanI];
   if (!span) return null;
 
-  const x = span.x + span.charOffsets[cursor.charI];
-  const y = block.y + cursor.lineI * block.style.lineHeight;
+  const x = line.x + span.x + span.charOffsets[cursor.charI];
+  const y = block.y + line.y;
 
   return { x, y };
 }
@@ -339,7 +446,7 @@ export function moveCursorLine(
   const line = block.lines[lineI];
   const spanI = scanLine(line, desiredX);
   const span = line.spans[spanI];
-  const charI = scanSpan(span, desiredX);
+  const charI = scanSpan(span, desiredX - line.x);
 
   return { blockI, lineI, spanI, charI };
 }
@@ -382,16 +489,9 @@ export function moveCursorVisual(
       ) {
         charI++;
         amount--;
-      } else if (spanI < line.spans.length - 1) {
+      } else if (spanI < line.spans.length - 1 && !(spanI === line.spans.length - 2 && line.spans[spanI + 1].text.length === 1)) {
         spanI++;
-        const span = line.spans[spanI];
-        if (span.text.length === 1) {
-          lineI++;
-          spanI = 0;
-          charI = 0;
-        } else {
-          charI = 1;
-        }
+        charI = 1;
         amount--;
       } else if (lineI < block.lines.length - 1) {
         lineI++;

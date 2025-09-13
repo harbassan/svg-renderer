@@ -96,7 +96,7 @@ let scene = {
           fontFamily: "Helvetica",
           fontStyle: "normal",
           fontWeight: "normal",
-          lineHeight: 24 * 1.1,
+          lineHeight: 1.1,
           fontSize: 24,
           textColor: "#ffffff",
           alignment: "left",
@@ -122,9 +122,6 @@ let scene = {
           },
           {
             id: "290834",
-            style: {
-              lineHeight: 40,
-            },
             spans: [
               {
                 text: "We are pleased to meet you",

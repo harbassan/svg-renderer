@@ -12,8 +12,11 @@ export interface VisualSpan {
 
 export interface VisualLine {
   spans: VisualSpan[];
+  x: number;
   y: number;
+  width: number;
   height: number;
+  baseline: number;
 }
 
 export interface VisualBlock {

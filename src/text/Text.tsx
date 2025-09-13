@@ -30,7 +30,6 @@ import {
 } from "../scene/text";
 import Rectangle from "../canvas/Rectangle";
 import useEditorStore from "../stores/editor";
-import { fastIsEqual } from "fast-is-equal";
 
 let isSelecting = false;
 let desiredColumn: number | null = null;
@@ -41,8 +40,8 @@ function buildGroups(blocks: VisualText) {
       {block.lines.map((line, j) => (
         <text
           key={j}
-          x={0}
-          y={block.y + (j + 1) * block.style.lineHeight}
+          x={line.x}
+          y={block.y + line.y + line.baseline}
           xmlSpace="preserve"
         >
           {line.spans.length === 0 ? (
@@ -118,13 +117,6 @@ function Text(component: TextShape) {
     });
   }
 
-  // Focus the hidden input when the cursor is set (clicked)
-  useEffect(() => {
-    if (visual.start && !visual.end && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [visual]);
-
   const { bounds } = component;
   const center = {
     x: bounds.x + bounds.width / 2,
@@ -150,13 +142,15 @@ function Text(component: TextShape) {
     return startEq && endEq;
   }
 
-  const selection = useEditorStore.getState().selection;
-  if (selection && !isEquivalent(visual, selection, blocks)) {
-    console.log("hi");
-    genSelection({
-      start: toVisual(selection.start, blocks),
-      end: toVisual(selection.end, blocks),
-    });
+  // TODO: this is a hack and should be replaced by a better method
+  if (useEditorStore.getState().selected === component.id) {
+    const selection = useEditorStore.getState().selection;
+    if (selection && !isEquivalent(visual, selection, blocks)) {
+      genSelection({
+        start: toVisual(selection.start, blocks),
+        end: toVisual(selection.end, blocks),
+      });
+    }
   }
 
   function handleMouseDown(e: React.MouseEvent) {
@@ -183,6 +177,7 @@ function Text(component: TextShape) {
   function handleMouseDownCapture() {
     setSelection({ start: null, end: null });
     setVisual({ start: null, end: null });
+    inputRef.current?.blur();
   }
 
   function handleMouseMove(e: React.MouseEvent) {
