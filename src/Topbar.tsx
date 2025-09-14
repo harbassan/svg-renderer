@@ -1,31 +1,16 @@
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  ArrowDownNarrowWide,
-  Bold,
   BringToFront,
   Diameter,
-  Highlighter,
-  Italic,
   MessageSquare,
-  PaintBucket,
-  Pencil,
   Redo,
   SendToBack,
   Spline,
   Trash2,
   Type,
-  Underline,
   Undo,
   VectorSquare,
 } from "lucide-react";
-import ChromePicker from "./wrapper/ChromePicker";
-import NumberInput from "./wrapper/NumberInput";
-import { getComponentProp, removeComponent } from "./scene/scene";
-import FontInput from "./wrapper/FontInput";
-import ToggleInput from "./wrapper/ToggleInput";
-import MultiInput from "./wrapper/MultiInput";
+import { getComponent, removeComponent } from "./scene/scene";
 import { useEffect } from "react";
 import { redo, undo } from "./scene/history";
 import {
@@ -34,6 +19,8 @@ import {
   stringifyComponent,
 } from "./scene/modify";
 import useEditorStore from "./stores/editor";
+import TextSection from "./topbar/TextSection";
+import ShapeSection from "./topbar/ShapeSection";
 
 function Topbar() {
   const selected = useEditorStore(state => state.selected);
@@ -86,16 +73,23 @@ function Topbar() {
     setCreateType(type);
   };
 
+  const component = selected ? getComponent(selected) : null;
+
   return (
     <div className="topbar">
       <div className="props" style={{ zIndex: 1 }}>
+
+        {/* undo/redo */}
         <button className="button" onClick={undo}>
           <Undo size={16} />
         </button>
         <button className="button" onClick={redo}>
           <Redo size={16} />
         </button>
+
         |
+
+        {/* element creation */}
         <button className="button" onClick={() => switchCreate("box")}>
           <VectorSquare size={16} />
         </button>
@@ -111,9 +105,13 @@ function Topbar() {
         <button className="button" onClick={() => switchCreate("speech")}>
           <MessageSquare size={16} />
         </button>
+
+        {/* element properties */}
         {selected && (
           <>
             |
+
+            {/* remove/reorder */}
             <button className="button" onClick={remove}>
               <Trash2 size={16} />
             </button>
@@ -141,60 +139,18 @@ function Topbar() {
             >
               <SendToBack size={16} />
             </button>
-            |
-            <ChromePicker prop="fill">
-              <PaintBucket size={13} />
-            </ChromePicker>
-            <ChromePicker prop="stroke">
-              <Pencil size={13} />
-            </ChromePicker>
-            <NumberInput prop="strokeWidth" />
-            {getComponentProp(selected, "type") === "textbox" && (
-              <>
-                |
-                <FontInput prop="content.style.fontFamily" />
-                <NumberInput prop="content.style.fontSize" />|
-                <ToggleInput
-                  prop="content.style.fontWeight"
-                  enabled="bold"
-                  disabled="normal"
-                >
-                  <Bold size={16} />
-                </ToggleInput>
-                <ToggleInput
-                  prop="content.style.fontStyle"
-                  enabled="italic"
-                  disabled="normal"
-                >
-                  <Italic size={16} />
-                </ToggleInput>
-                <ToggleInput
-                  prop="content.style.textDecoration"
-                  enabled="underline"
-                  disabled="none"
-                >
-                  <Underline size={17} />
-                </ToggleInput>
-                <ChromePicker prop="content.style.textColor">
-                  <span>A</span>
-                </ChromePicker>
-                <ChromePicker prop="content.style.highlightColor">
-                  <Highlighter size={14} />
-                </ChromePicker>
-                |
-                <MultiInput
-                  prop="content.style.alignment"
-                  options={["left", "center", "right"]}
-                >
-                  <AlignLeft size={16} />
-                  <AlignCenter size={16} />
-                  <AlignRight size={16} />
-                </MultiInput>
-                |
-                <ArrowDownNarrowWide size={18} />
-                <NumberInput prop="content.style.lineHeight" />
-              </>
-            )}
+
+            {/* shape properties */}
+            {component.type !== "image" && <>
+              |
+              <ShapeSection />
+            </>}
+
+            {/* text content styles */}
+            {component.type === "textbox" && <>
+              |
+              <TextSection />
+            </>}
           </>
         )}
       </div>

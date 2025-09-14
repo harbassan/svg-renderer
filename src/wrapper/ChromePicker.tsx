@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Chrome, type ColorResult } from "@uiw/react-color";
-import { getComponentProp } from "../scene/scene";
-import { modifyComponentProp } from "../scene/modify";
-import useEditorStore from "../stores/editor";
+import { Chrome } from "@uiw/react-color";
 
 function ChromePicker({
   children,
-  prop,
-}: React.PropsWithChildren<{ prop: string }>) {
-  const selected = useEditorStore(state => state.selected)!;
-
-  const [color, setColor] = useState(
-    getComponentProp(selected, prop) || "#ffffffff",
-  );
+  value,
+  onChange
+}: React.PropsWithChildren<{ value: string, onChange: (value: string) => void }>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -26,26 +19,16 @@ function ChromePicker({
     return () => document.removeEventListener("mousedown", handleClick, true);
   }, []);
 
-  useEffect(() => {
-    if (!selected) return;
-    setColor(getComponentProp(selected, prop) || "#ffffffff");
-  }, [selected]);
-
-  function onChange(val: ColorResult) {
-    setColor(val.hexa);
-    modifyComponentProp(selected, prop, val.hexa);
-  }
-
   return (
     <div style={{ position: "relative", display: "flex" }}>
       <button className="button" onClick={() => setOpen(!open)}>
-        <div className="color-input" style={{ borderBottomColor: color }}>
+        <div className="color-input" style={{ borderBottomColor: value }}>
           {children}
         </div>
       </button>
       {open && (
         <div ref={ref} style={{ position: "absolute", top: "40px" }}>
-          <Chrome color={color} onChange={onChange} />
+          <Chrome color={value} onChange={(val) => onChange(val.hexa)} />
         </div>
       )}
     </div>

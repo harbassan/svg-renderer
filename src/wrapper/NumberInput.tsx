@@ -1,32 +1,12 @@
-import { useEffect, useState } from "react";
-import { getComponentProp } from "../scene/scene";
-import { modifyComponentProp } from "../scene/modify";
 import { Minus, Plus } from "lucide-react";
-import useEditorStore from "../stores/editor";
 
-function NumberInput({ prop }: { prop: string }) {
-  const selected = useEditorStore(state => state.selected)!;
-
-  const [value, setValue] = useState(getComponentProp(selected, prop) || 0);
-
-  useEffect(() => {
-    if (!selected) return;
-    setValue(getComponentProp(selected, prop) || 0);
-  }, [selected]);
-
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setValue(Number(e.target.value));
-    modifyComponentProp(selected, prop, e.target.value);
-  }
-
+function NumberInput({ value, onChange }: { value: number, onChange: (value: number) => void }) {
   function increment() {
-    setValue(value + 1);
-    modifyComponentProp(selected, prop, value + 1);
+    onChange(value + 1);
   }
 
   function decrement() {
-    setValue(value - 1);
-    modifyComponentProp(selected, prop, value - 1);
+    onChange(value - 1);
   }
 
   return (
@@ -34,9 +14,8 @@ function NumberInput({ prop }: { prop: string }) {
       <input
         className="text-input"
         value={value}
-        onChange={onChange}
+        onChange={(e) => onChange(Number(e.target.value))}
         type="number"
-        name={prop}
         min={1}
         max={100}
       />

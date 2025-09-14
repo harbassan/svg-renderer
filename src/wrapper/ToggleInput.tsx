@@ -1,36 +1,20 @@
-import { useEffect, useState } from "react";
-import { getComponentProp } from "../scene/scene";
-import { modifyComponentProp } from "../scene/modify";
-import useEditorStore from "../stores/editor";
-
-function ToggleInput({
-  children,
-  prop,
-  enabled,
-  disabled,
-}: React.PropsWithChildren<{
-  prop: string;
+type ToggleInputProps = React.PropsWithChildren<{
+  value: string;
+  onToggle: (value: string) => void;
   enabled: string;
   disabled: string;
-}>) {
-  const selected = useEditorStore(state => state.selected)!;
+}>
 
-  const [value, setValue] = useState(
-    getComponentProp(selected, prop) === enabled,
-  );
+function ToggleInput({ children, value, onToggle, enabled, disabled }: ToggleInputProps) {
+  const active = value === enabled;
 
-  useEffect(() => {
-    if (!selected) return;
-    setValue(getComponentProp(selected, prop) === enabled);
-  }, [selected]);
-
-  function onToggle() {
-    setValue(!value);
-    modifyComponentProp(selected, prop, !value ? enabled : disabled);
+  function handleClick() {
+    if (active) onToggle(disabled);
+    else onToggle(enabled);
   }
 
   return (
-    <button className={`button ${value && "active"}`} onClick={onToggle}>
+    <button className={`button ${active && "active"}`} onClick={handleClick}>
       {children}
     </button>
   );

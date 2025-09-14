@@ -2,7 +2,8 @@ import { fastIsEqual } from "fast-is-equal";
 import { modifyComponentProp } from "./modify";
 import { getComponentProp } from "./scene";
 import type { ModelCursor, ModelSelection } from "../text/types";
-import type { ModelBlock, ModelSpan } from "../types";
+import type { BaseTextStyle, ModelBlock, ModelSpan } from "../types";
+import { squash } from "../text/util";
 
 export function insertChar(id: string, pos: ModelCursor, char: string) {
   const target = getComponentProp(
@@ -51,35 +52,40 @@ export function deleteChar(id: string, pos: ModelCursor) {
   return newCursor;
 }
 
-function splitSpan(id: string, cursor: ModelCursor) {
-  const block: ModelBlock = getComponentProp(
-    id,
-    `content.blocks.${cursor.blockI}`,
-  );
+function splitSpan(blocks: ModelBlock[], cursor: ModelCursor) {
+  const block = blocks[cursor.blockI];
   const span = block.spans[cursor.spanI];
 
   const left = span.text.slice(0, cursor.charI);
   const right = span.text.slice(cursor.charI);
+
+  // already at boundary
+  if (!left.length || !right.length) return cursor;
+
   const leftSpan = { ...span, text: left };
   const rightSpan = { ...span, text: right };
 
-  const newSpans = [
-    ...block.spans.slice(0, cursor.spanI),
-    leftSpan,
-    rightSpan,
-    ...block.spans.slice(cursor.spanI + 1),
-  ];
+  block.spans.splice(cursor.spanI, 1, leftSpan, rightSpan);
 
-  modifyComponentProp(id, `content.blocks.${cursor.blockI}.spans`, newSpans);
-
-  return { blockI: cursor.blockI, spanI: cursor.spanI, charI: leftSpan.text.length };
+  return cursor;
 }
 
 function splitSelection(id: string, selection: ModelSelection) {
-  const end = splitSpan(id, selection.end!);
-  const start = splitSpan(id, selection.start!);
-  if (end.blockI === start.blockI) end.spanI++;
-  return { start, end };
+  const blocks = getComponentProp(id, "content.blocks");
+  const end = splitSpan(blocks, selection.end!);
+
+  const before = blocks[selection.start!.blockI].spans.length;
+  const start = splitSpan(blocks, selection.start!);
+
+  if (before !== blocks[start.blockI].spans.length) { // the starting span actually split
+    if (end.blockI === start.blockI) {
+      end.spanI++;
+      if (end.spanI === start.spanI + 1)
+        end.charI = blocks[end.blockI].spans[end.spanI].text.length;
+    }
+  }
+
+  return { start, end, blocks };
 }
 
 export function insertSelection(
@@ -93,9 +99,8 @@ export function insertSelection(
 
 export function deleteSelection(id: string, selection: ModelSelection) {
   const normd = normalizeSelection(selection);
-  const { start, end } = splitSelection(id, normd);
+  const { start, end, blocks } = splitSelection(id, normd);
 
-  const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
   const startBlock = blocks[start.blockI];
   const endBlock = blocks[end.blockI];
 
@@ -104,15 +109,12 @@ export function deleteSelection(id: string, selection: ModelSelection) {
     ...endBlock.spans.slice(end.spanI + 1),
   ];
 
-  const newBlocks = [
-    ...blocks.slice(0, start.blockI),
-    { spans: newSpans, style: startBlock.style },
-    ...blocks.slice(end.blockI + 1),
-  ];
+  const newBlock = { spans: newSpans, style: startBlock.style };
+  blocks.splice(start.blockI, end.blockI - start.blockI + 1, newBlock);
 
-  modifyComponentProp(id, "content.blocks", normalizeBlocks(newBlocks));
+  modifyComponentProp(id, "content.blocks", normalizeBlocks(blocks));
 
-  return start;
+  return normalizeCursor(blocks, start);
 }
 
 export function normalizeBlocks(blocks: ModelBlock[]) {
@@ -258,4 +260,48 @@ export function equals(c1: ModelCursor | null, c2: ModelCursor | null) {
   return (
     c1.blockI === c2.blockI && c1.charI === c2.charI && c1.spanI === c2.spanI
   );
+}
+
+function* spanRange(blocks: ModelBlock[], selection: ModelSelection) {
+  const { start, end } = normalizeSelection(selection) as { start: ModelCursor, end: ModelCursor };
+  for (let b = start.blockI; b <= end.blockI; b++) {
+    const startSpan = (b === start.blockI ? start.spanI : 0);
+    const endSpan = (b === end.blockI ? end.spanI : blocks[b].spans.length - 1);
+
+    for (let s = startSpan; s <= endSpan; s++) {
+      yield blocks[b].spans[s];
+    }
+  }
+}
+
+export function applySelectionStyle(id: string, selection: ModelSelection, style: Partial<BaseTextStyle>) {
+  const { start, end, blocks } = splitSelection(id, selection);
+
+  start.spanI++;
+  for (const span of spanRange(blocks, { start, end })) {
+    span.style = { ...span.style, ...style };
+  }
+  start.spanI--;
+
+  // TODO: normalise these results and update the cursor accordingly
+  modifyComponentProp(id, "content.blocks", blocks);
+
+  return normalizeSelection({ start, end });
+}
+
+export function getStyleForSelection(id: string, selection: ModelSelection) {
+  const content = getComponentProp(id, "content");
+  const { start, end } = selection;
+
+  if (start == null) return content.style; // no selection
+
+  if (end) { // full selection
+    // TODO: choose the least specificity present across selected spans (prefer false for toggles, unknown for values)
+    const block = content.blocks[end.blockI];
+    return squash(content.style, block.style, block.spans[end.spanI].style);
+  }
+
+  // start only (cursor)
+  const block = content.blocks[start.blockI];
+  return squash(content.style, block.style, block.spans[start.spanI].style);
 }

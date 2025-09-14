@@ -1,34 +1,12 @@
-import { useEffect, useState } from "react";
-import { getComponentProp } from "../scene/scene";
-import { modifyComponentProp } from "../scene/modify";
-import useEditorStore from "../stores/editor";
-
-function FontInput({ prop }: { prop: string }) {
-  const selected = useEditorStore(state => state.selected)!;
-
-  const [value, setValue] = useState(
-    getComponentProp(selected, prop) || "Arial",
-  );
-
-  useEffect(() => {
-    if (!selected) return;
-    setValue(getComponentProp(selected, prop) || "Arial");
-  }, [selected]);
-
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setValue(e.target.value);
-    modifyComponentProp(selected, prop, e.target.value);
-  }
-
+function FontInput({ value, onChange }: { value: string, onChange: (value: string) => void }) {
   return (
     <div style={{ position: "relative" }}>
       <input
         list="fonts"
         className="text-input"
         value={value}
-        onChange={onChange}
+        onChange={(e) => onChange(e.target.value)}
         type="text"
-        name={prop}
       />
       <datalist id="fonts">
         <option value="Arial" />

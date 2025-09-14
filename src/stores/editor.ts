@@ -4,19 +4,19 @@ import type { ModelSelection } from "../text/types";
 interface EditorState {
     selected: string | null;
     mode: "normal" | "create";
-    selection: ModelSelection | null;
+    selection: ModelSelection;
     createType: string | null;
 
     setSelected: (id: string | null) => void;
     setMode: (mode: EditorState["mode"]) => void;
-    setSelection: (selection: ModelSelection | null) => void;
+    setSelection: (selection: ModelSelection) => void;
     setCreateType: (type: string) => void;
 }
 
 const useEditorStore = create<EditorState>()((set) => ({
     selected: null,
     mode: "normal",
-    selection: null,
+    selection: { start: null, end: null },
     createType: null,
 
     setSelected: (id) => set({ selected: id }),

@@ -1,37 +1,24 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { getComponentProp } from "../scene/scene";
-import { modifyComponentProp } from "../scene/modify";
-import useEditorStore from "../stores/editor";
+type MultiInputProps = React.PropsWithChildren<{
+  value: string;
+  onChange: (value: string) => void;
+  options: string[]
+}>
 
 function MultiInput({
   children,
-  prop,
+  value,
+  onChange,
   options,
-}: React.PropsWithChildren<{ prop: string; options: string[] }>) {
-  const selected = useEditorStore(state => state.selected)!;
-
-  const [value, setValue] = useState(
-    getComponentProp(selected, prop) ?? options[0],
-  );
-
-  useEffect(() => {
-    if (!selected) return;
-    setValue(getComponentProp(selected, prop) ?? options[0]);
-  }, [selected]);
-
-  function select(option: string) {
-    setValue(option);
-    modifyComponentProp(selected, prop, option);
-  }
-
+}: MultiInputProps) {
   return (
     <>
       {options.map((option, i) => (
         <button
           className={`button ${value === option && "active"}`}
-          onClick={() => select(option)}
+          onClick={() => onChange(option)}
         >
-          {(children as ReactNode[])[i]}
+          {/* @ts-ignore */}
+          {children[i]}
         </button>
       ))}
     </>
