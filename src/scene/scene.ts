@@ -122,6 +122,7 @@ let scene = {
           },
           {
             id: "290834",
+            style: {},
             spans: [
               {
                 text: "We are pleased to meet you",

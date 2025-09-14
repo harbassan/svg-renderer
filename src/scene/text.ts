@@ -277,6 +277,13 @@ function* spanRange(blocks: ModelBlock[], selection: ModelSelection) {
 export function applySelectionStyle(id: string, selection: ModelSelection, style: Partial<BaseTextStyle>) {
   const { start, end, blocks } = splitSelection(id, selection);
 
+  if (style.alignment || style.lineHeight) {
+    for (let i = selection.start!.blockI; i <= selection.end!.blockI; i++) {
+      if (style.alignment) blocks[i].style.alignment = style.alignment;
+      if (style.lineHeight) blocks[i].style.lineHeight = style.lineHeight;
+    }
+  }
+
   start.spanI++;
   for (const span of spanRange(blocks, { start, end })) {
     span.style = { ...span.style, ...style };

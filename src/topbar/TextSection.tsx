@@ -1,21 +1,21 @@
 import { AlignCenter, AlignLeft, AlignRight, ArrowDownNarrowWide, Bold, Highlighter, Italic, Underline } from "lucide-react";
-import { getComponent } from "../scene/scene";
 import useEditorStore from "../stores/editor";
 import FontInput from "../wrapper/FontInput";
 import NumberInput from "../wrapper/NumberInput";
 import ToggleInput from "../wrapper/ToggleInput";
 import ChromePicker from "../wrapper/ChromePicker";
 import MultiInput from "../wrapper/MultiInput";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { applySelectionStyle, getStyleForSelection } from "../scene/text";
-import type { BaseTextStyle } from "../types";
 import { modifyComponentProp } from "../scene/modify";
+import type { BaseTextStyle } from "../types";
 
 function TextSection() {
     const selected = useEditorStore(state => state.selected);
     const selection = useEditorStore(state => state.selection);
 
-    const [style, setStyle] = useState({} as BaseTextStyle);
+    const style = useEditorStore(state => state.activeStyle);
+    const setStyle = useEditorStore(state => state.setActiveStyle);
 
     useEffect(() => {
         if (!selected) return;
@@ -24,15 +24,21 @@ function TextSection() {
 
     if (!selected) return null;
 
-    function modifyStyle(prop: string, value: string | number) {
+    if (!style) return null;
+
+    function modifyStyle(prop: keyof BaseTextStyle, value: string | number) {
         if (selection?.end) {
             const newSelection = applySelectionStyle(selected!, selection, { [prop]: value })
             useEditorStore.getState().setSelection(newSelection);
+        } else if (selection?.start) {
+            if (prop === "lineHeight" || prop === "alignment") {
+                modifyComponentProp(selected!, `content.blocks.${selection.start.blockI}.style.${prop}`, value);
+            }
         } else {
             modifyComponentProp(selected!, `content.style.${prop}`, value);
         }
 
-        setStyle({ ...style, [prop]: value });
+        setStyle({ ...style!, [prop]: value });
     }
 
     return (
@@ -91,7 +97,7 @@ function TextSection() {
             |
 
             <ArrowDownNarrowWide size={18} />
-            <NumberInput value={style.lineHeight} onChange={(value) => modifyStyle("lineHeight", value)} />
+            <NumberInput value={style.lineHeight} onChange={(value) => modifyStyle("lineHeight", value)} step={0.1} />
         </>
     )
 }

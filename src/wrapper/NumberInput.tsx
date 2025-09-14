@@ -1,12 +1,12 @@
 import { Minus, Plus } from "lucide-react";
 
-function NumberInput({ value, onChange }: { value: number, onChange: (value: number) => void }) {
+function NumberInput({ value, onChange, step = 1 }: { value: number, onChange: (value: number) => void, step?: number }) {
   function increment() {
-    onChange(value + 1);
+    onChange(value + step);
   }
 
   function decrement() {
-    onChange(value - 1);
+    onChange(value - step);
   }
 
   return (
