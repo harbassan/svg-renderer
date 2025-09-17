@@ -1,4 +1,4 @@
-import type { BaseTextStyle } from "../types";
+import type { BaseTextStyle, RelativeBounds } from "../types";
 
 export interface VisualSpan {
   text: string;
@@ -17,6 +17,8 @@ export interface VisualLine {
   width: number;
   height: number;
   baseline: number;
+  maxFontSize: number;
+  maxDescent: number;
 }
 
 export interface VisualBlock {
@@ -26,7 +28,12 @@ export interface VisualBlock {
   height: number;
 }
 
-export type VisualText = VisualBlock[];
+export interface VisualDocument {
+  blocks: VisualBlock[];
+  bounds: RelativeBounds;
+  id: string;
+  type: "text";
+}
 
 export interface VisualCursor {
   blockI: number;

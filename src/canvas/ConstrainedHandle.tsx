@@ -1,15 +1,15 @@
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
-import type { Bounds, Scene, Vec2 } from "../types";
+import type { Bounds, Vec2 } from "../types";
 import { getBoxCenter, rotate, subtract, translate } from "../util";
 import { modifyComponentBounds } from "../scene/modify";
 import useEditorStore from "../stores/editor";
+import useVisualScene from "../stores/visual";
 
 interface Props {
   x: number;
   y: number;
   constraint: "x" | "y";
-  scene: Scene;
   setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
   isTransforming: React.RefObject<boolean>;
 }
@@ -29,15 +29,15 @@ const ConstrainedHandle = ({
   x,
   y,
   constraint,
-  scene,
   setBounds,
   isTransforming,
 }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
   const selected = useEditorStore(state => state.selected)!;
+  const scene = useVisualScene(scene => scene.components);
 
-  const bounds = scene?.components[selected].bounds;
+  const bounds = scene[selected].bounds;
   const verts = bounds.verts;
 
   const bound = constraint === "x" ? x : y;

@@ -1,6 +1,6 @@
 import type { RelativeBounds } from "../types";
 import { expandToPath } from "../util";
-import { getOffset, normalizeSelectionVisual, setFont } from "./util";
+import { normalizeSelectionVisual } from "./util";
 import type {
   VisualCursor,
   VisualSelection,
@@ -22,7 +22,6 @@ function generateHighlightSegment(
   isStart: boolean,
   isEnd: boolean,
 ) {
-  setFont(span.style);
   if (isStart && isEnd) {
     const x = span.charOffsets[start.charI];
     const width = span.charOffsets[end.charI] - x;

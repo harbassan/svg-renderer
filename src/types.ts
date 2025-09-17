@@ -64,20 +64,20 @@ export interface EllipseComponent extends ShapeComponent {
 
 export interface TextBoxComponent extends ShapeComponent {
   type: "textbox";
-  content: MinifiedTextShape;
+  document: ModelDocument;
   color: HexString;
   padding: number;
 }
 
-interface MinifiedTextShape {
+interface BaseModelDocument {
   type: "text";
   blocks: ModelBlock[];
   style?: Partial<BaseTextStyle>;
 }
 
-export interface TextShape extends MinifiedTextShape {
-  id: string;
+export interface ModelDocument extends BaseModelDocument {
   bounds: RelativeBounds;
+  id: string;
 }
 
 export interface ModelBlock {
@@ -90,7 +90,7 @@ export interface ModelSpan {
   style?: Partial<SpanTextStyle>;
 }
 
-export interface BaseTextStyle extends BlockTextStyle, SpanTextStyle {}
+export interface BaseTextStyle extends BlockTextStyle, SpanTextStyle { }
 
 export interface BlockTextStyle {
   alignment: "left" | "center" | "right";

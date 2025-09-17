@@ -5,17 +5,18 @@ import RotationHandle from "./RotationHandle";
 import ArbitrarySpeechHandle from "./ArbitrarySpeechHandle";
 import ConstrainedSpeechHandle from "./ConstrainedSpeechHandle";
 import useEditorStore from "../stores/editor";
+import useVisualScene from "../stores/visual";
 
 interface Props {
-  scene: Scene;
   setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
   isTransforming: React.RefObject<boolean>;
 }
 
-function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
+function SpeechHandles({ setBounds, isTransforming }: Props) {
   const selected = useEditorStore(state => state.selected)!;
+  const scene = useVisualScene(scene => scene.components);
 
-  const verts = scene?.components[selected].bounds.verts;
+  const verts = scene[selected].bounds.verts;
   const center = getBoxCenter(verts);
   const rotatorY = Math.min(verts[0].y, verts[1].y);
 
@@ -24,28 +25,24 @@ function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
       <ArbitrarySpeechHandle
         x={0}
         y={0}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
       <ArbitrarySpeechHandle
         x={1}
         y={0}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
       <ArbitrarySpeechHandle
         x={1}
         y={1}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
       <ArbitrarySpeechHandle
         x={0}
         y={1}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -53,7 +50,6 @@ function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
       <RotationHandle
         x={center.x}
         y={rotatorY}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -62,7 +58,6 @@ function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
         x={center.x}
         y={0}
         constraint="y"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -70,7 +65,6 @@ function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
         x={center.x}
         y={1}
         constraint="y"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -78,7 +72,6 @@ function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
         x={0}
         y={center.y}
         constraint="x"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -86,7 +79,6 @@ function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
         x={1}
         y={center.y}
         constraint="x"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -94,7 +86,6 @@ function SpeechHandles({ scene, setBounds, isTransforming }: Props) {
       <ArbitraryHandle
         x={2}
         y={2}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />

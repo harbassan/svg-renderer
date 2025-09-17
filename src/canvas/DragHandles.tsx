@@ -4,17 +4,18 @@ import ConstrainedHandle from "./ConstrainedHandle";
 import { getBoxCenter } from "../util";
 import RotationHandle from "./RotationHandle";
 import useEditorStore from "../stores/editor";
+import useVisualScene from "../stores/visual";
 
 interface Props {
-  scene: Scene;
   setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
   isTransforming: React.RefObject<boolean>;
 }
 
-const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
+const DragHandles = ({ setBounds, isTransforming }: Props) => {
   const selected = useEditorStore(state => state.selected)!;
+  const scene = useVisualScene(scene => scene.components);
 
-  const verts = scene?.components[selected].bounds.verts;
+  const verts = scene[selected].bounds.verts;
   const center = getBoxCenter(verts);
   const rotatorY = Math.min(verts[0].y, verts[1].y);
 
@@ -23,28 +24,24 @@ const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
       <ArbitraryHandle
         x={0}
         y={0}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
       <ArbitraryHandle
         x={1}
         y={0}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
       <ArbitraryHandle
         x={1}
         y={1}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
       <ArbitraryHandle
         x={0}
         y={1}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -52,7 +49,6 @@ const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
       <RotationHandle
         x={center.x}
         y={rotatorY}
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -61,7 +57,6 @@ const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
         x={center.x}
         y={0}
         constraint="y"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -69,7 +64,6 @@ const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
         x={center.x}
         y={1}
         constraint="y"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -77,7 +71,6 @@ const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
         x={0}
         y={center.y}
         constraint="x"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />
@@ -85,7 +78,6 @@ const DragHandles = ({ scene, setBounds, isTransforming }: Props) => {
         x={1}
         y={center.y}
         constraint="x"
-        scene={scene}
         setBounds={setBounds}
         isTransforming={isTransforming}
       />

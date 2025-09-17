@@ -34,7 +34,7 @@ const defaults = {
   textbox: {
     padding: 20,
     fill: "#ffffff00",
-    content: {
+    document: {
       style: { textColor: "#ffffff" },
       blocks: [
         {

@@ -9,7 +9,7 @@ import CanvasContext from "./CanvasContext";
 import { modifyComponentBounds } from "../scene/modify";
 import DragHandles from "./DragHandles";
 import Ellipse from "../elements/Ellipse";
-import type { Bounds, Component, Scene, Vec2 } from "../types";
+import type { Bounds, Component, Vec2 } from "../types";
 import Box from "../elements/Box";
 import { getBoxCenter, subtract, translate } from "../util";
 import Speech from "../elements/Speech";
@@ -18,6 +18,7 @@ import LineHandles from "./LineHandles";
 import SpeechHandles from "./SpeechHandles";
 import Rectangle from "./Rectangle";
 import useEditorStore from "../stores/editor";
+import useVisualScene from "../stores/visual";
 
 export interface DragHandlerRef {
   startDrag: (e: MouseEvent, id: string) => void;
@@ -64,31 +65,32 @@ function resolve(component: Component, bounds: Bounds) {
 }
 
 const Overlay = ({
-  scene,
   ref,
 }: {
-  scene: Scene;
   ref: React.Ref<DragHandlerRef>;
 }) => {
   const { toSVGSpace, registerHandler, clearHandler } =
     useContext(CanvasContext);
   const selected = useEditorStore(state => state.selected)!;
-  const component = scene?.components[selected];
+  const scene = useVisualScene(scene => scene.components);
+
 
   const [bounds, setBounds] = useState<Bounds>({ verts: [], rotation: 0 });
 
   const offset = useRef<Vec2>({ x: 0, y: 0 });
   const isTransforming = useRef<boolean>(false);
 
+  const component = scene[selected];
+
   useEffect(() => {
     if (!scene || !selected) return;
-    setBounds(scene.components[selected].bounds);
+    setBounds(scene[selected].bounds);
   }, [scene, selected]);
 
   function updateDrag(id: string, event: React.MouseEvent) {
     isTransforming.current = true;
     const position = toSVGSpace(event.clientX, event.clientY);
-    const verts = scene?.components[id].bounds.verts;
+    const verts = scene[id].bounds.verts;
     setBounds((prev) => ({
       ...prev,
       verts: translate(verts, subtract(position, offset.current)),
@@ -99,7 +101,7 @@ const Overlay = ({
     clearHandler("mousemove");
     clearHandler("mouseup");
     const position = toSVGSpace(event.clientX, event.clientY);
-    const verts = scene?.components[id].bounds.verts;
+    const verts = scene[id].bounds.verts;
     modifyComponentBounds(id, {
       verts: translate(verts, subtract(position, offset.current)),
     });
@@ -119,7 +121,6 @@ const Overlay = ({
       case "speech":
         return (
           <SpeechHandles
-            scene={scene}
             setBounds={setBounds}
             isTransforming={isTransforming}
           />
@@ -127,7 +128,6 @@ const Overlay = ({
       case "line":
         return (
           <LineHandles
-            scene={scene}
             setBounds={setBounds}
             isTransforming={isTransforming}
           />
@@ -135,7 +135,6 @@ const Overlay = ({
       default:
         return (
           <DragHandles
-            scene={scene}
             setBounds={setBounds}
             isTransforming={isTransforming}
           />

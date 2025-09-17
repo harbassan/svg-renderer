@@ -3,17 +3,17 @@ import { modifyComponentProp } from "./modify";
 import { getComponentProp } from "./scene";
 import type { ModelCursor, ModelSelection } from "../text/types";
 import type { BaseTextStyle, ModelBlock, ModelSpan } from "../types";
-import { squash } from "../text/util";
+import { squash } from "../text/build";
 
 export function insertChar(id: string, pos: ModelCursor, char: string) {
   const target = getComponentProp(
     id,
-    `content.blocks.${pos.blockI}.spans.${pos.spanI}.text`,
+    `document.blocks.${pos.blockI}.spans.${pos.spanI}.text`,
   );
   const modified = target.slice(0, pos.charI) + char + target.slice(pos.charI);
   modifyComponentProp(
     id,
-    `content.blocks.${pos.blockI}.spans.${pos.spanI}.text`,
+    `document.blocks.${pos.blockI}.spans.${pos.spanI}.text`,
     modified,
   );
 
@@ -25,7 +25,7 @@ export function deleteChar(id: string, pos: ModelCursor) {
 
   const newCursor = moveCursor(id, pos, -1);
 
-  const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
+  const blocks: ModelBlock[] = getComponentProp(id, `document.blocks`);
   const spans = blocks[pos.blockI].spans;
 
   if (newCursor.blockI === pos.blockI && newCursor.spanI === pos.spanI) {
@@ -47,7 +47,7 @@ export function deleteChar(id: string, pos: ModelCursor) {
     blocks[pos.blockI - 1].spans.push(...spans);
   }
 
-  modifyComponentProp(id, `content.blocks`, normalizeBlocks(blocks));
+  modifyComponentProp(id, `document.blocks`, normalizeBlocks(blocks));
 
   return newCursor;
 }
@@ -71,7 +71,7 @@ function splitSpan(blocks: ModelBlock[], cursor: ModelCursor) {
 }
 
 function splitSelection(id: string, selection: ModelSelection) {
-  const blocks = getComponentProp(id, "content.blocks");
+  const blocks = getComponentProp(id, "document.blocks");
   const end = splitSpan(blocks, selection.end!);
 
   const before = blocks[selection.start!.blockI].spans.length;
@@ -112,7 +112,7 @@ export function deleteSelection(id: string, selection: ModelSelection) {
   const newBlock = { spans: newSpans, style: startBlock.style };
   blocks.splice(start.blockI, end.blockI - start.blockI + 1, newBlock);
 
-  modifyComponentProp(id, "content.blocks", normalizeBlocks(blocks));
+  modifyComponentProp(id, "document.blocks", normalizeBlocks(blocks));
 
   return normalizeCursor(blocks, start);
 }
@@ -141,7 +141,7 @@ export function normalizeBlocks(blocks: ModelBlock[]) {
 }
 
 export function createBlock(id: string, pos: ModelCursor) {
-  const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
+  const blocks: ModelBlock[] = getComponentProp(id, `document.blocks`);
   const old = blocks[pos.blockI];
 
   const oldSpans = [];
@@ -177,7 +177,7 @@ export function createBlock(id: string, pos: ModelCursor) {
     { ...old, spans: oldSpans },
     { ...old, spans: newSpans },
   );
-  modifyComponentProp(id, `content.blocks`, newBlocks);
+  modifyComponentProp(id, `document.blocks`, newBlocks);
   return { blockI: pos.blockI + 1, spanI: 0, charI: 0 };
 }
 
@@ -208,7 +208,7 @@ function normalizeCursor(blocks: ModelBlock[], pos: ModelCursor) {
 
 function moveCursor(id: string, cursor: ModelCursor, amount: number) {
   let { blockI, spanI, charI } = cursor;
-  const blocks: ModelBlock[] = getComponentProp(id, `content.blocks`);
+  const blocks: ModelBlock[] = getComponentProp(id, `document.blocks`);
 
   while (amount !== 0) {
     const block = blocks[blockI];
@@ -291,24 +291,24 @@ export function applySelectionStyle(id: string, selection: ModelSelection, style
   start.spanI--;
 
   // TODO: normalise these results and update the cursor accordingly
-  modifyComponentProp(id, "content.blocks", blocks);
+  modifyComponentProp(id, "document.blocks", blocks);
 
   return normalizeSelection({ start, end });
 }
 
 export function getStyleForSelection(id: string, selection: ModelSelection) {
-  const content = getComponentProp(id, "content");
+  const doc = getComponentProp(id, "document");
   const { start, end } = selection;
 
-  if (start == null) return content.style; // no selection
+  if (start == null) return doc.style; // no selection
 
   if (end) { // full selection
     // TODO: choose the least specificity present across selected spans (prefer false for toggles, unknown for values)
-    const block = content.blocks[end.blockI];
-    return squash(content.style, block.style, block.spans[end.spanI].style);
+    const block = doc.blocks[end.blockI];
+    return squash(doc.style, block.style, block.spans[end.spanI].style);
   }
 
   // start only (cursor)
-  const block = content.blocks[start.blockI];
-  return squash(content.style, block.style, block.spans[start.spanI].style);
+  const block = doc.blocks[start.blockI];
+  return squash(doc.style, block.style, block.spans[start.spanI].style);
 }

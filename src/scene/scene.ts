@@ -1,6 +1,9 @@
 import { v4 } from "uuid";
 import { updateHistory } from "./history";
 import { getObject, merge } from "./util";
+import useVisualScene from "../stores/visual";
+import { buildVisualComponent, generateVisualCursor } from "../pipeline";
+import type { Component } from "../types";
 
 let scene = {
   components: {
@@ -91,7 +94,7 @@ let scene = {
       stroke: "#00ff00",
       strokeWidth: 5,
       zIndex: 0,
-      content: {
+      document: {
         style: {
           fontFamily: "Helvetica",
           fontStyle: "normal",
@@ -201,13 +204,16 @@ export function getComponentProp(id: string, prop: string) {
 }
 
 export function addComponent(props: Record<string, any>) {
-  scene.components[props.id] = { ...props };
+  const component = { ...props } as Component;
+  scene.components[props.id] = component;
+  useVisualScene.getState().updateComponent(buildVisualComponent(component));
   scene = { ...scene };
   emitEvent("update_component");
 }
 
 export function removeComponent(id: string) {
   delete scene.components[id];
+  useVisualScene.getState().deleteComponent(id);
   scene = { ...scene };
   emitEvent("update_component");
 }
@@ -223,6 +229,7 @@ export function modifyComponent(id: string, props: Record<string, any>) {
   const component = scene.components[id];
   if (!component) return;
   scene.components[id] = merge(component, props);
+  useVisualScene.getState().updateComponent(buildVisualComponent(merge(component, props) as Component));
   scene = { ...scene };
   emitEvent("update_component");
 }

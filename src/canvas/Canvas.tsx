@@ -1,6 +1,5 @@
-import { useContext, useRef } from "react";
+import { useRef } from "react";
 import CanvasContext from "./CanvasContext";
-import useScene from "../useScene";
 import Overlay, { type DragHandlerRef } from "./Overlay";
 import type { Component } from "../types";
 import TextBox from "../elements/TextBox";
@@ -11,6 +10,7 @@ import Image from "../elements/Image";
 import Line from "../elements/Line";
 import CreateOverlay from "./CreateOverlay";
 import useEditorStore from "../stores/editor";
+import useVisualScene from "../stores/visual";
 
 function resolve(component: Component) {
   switch (component.type) {
@@ -30,7 +30,7 @@ function resolve(component: Component) {
 }
 
 function Canvas() {
-  const scene = useScene();
+  const scene = useVisualScene(state => state.components);
 
   const setSelected = useEditorStore(state => state.setSelected);
   const mode = useEditorStore(state => state.mode);
@@ -110,7 +110,7 @@ function Canvas() {
     );
   }
 
-  const components = Object.values(scene.components)
+  const components = Object.values(scene)
     .sort((a, b) => a.zIndex - b.zIndex)
     .map(renderComponent);
 
@@ -128,7 +128,7 @@ function Canvas() {
         {mode === "create" ? (
           <CreateOverlay />
         ) : (
-          <Overlay scene={scene} ref={dragHandlerRef} />
+          <Overlay ref={dragHandlerRef} />
         )}
         <svg
           id="main"
