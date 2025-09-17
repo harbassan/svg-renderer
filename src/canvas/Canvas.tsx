@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import CanvasContext from "./CanvasContext";
-import Overlay, { type DragHandlerRef } from "./Overlay";
+import Overlay from "./Overlay";
 import type { Component } from "../types";
 import TextBox from "../elements/TextBox";
 import Speech from "../elements/Speech";
@@ -11,6 +11,7 @@ import Line from "../elements/Line";
 import CreateOverlay from "./CreateOverlay";
 import useEditorStore from "../stores/editor";
 import useVisualScene from "../stores/visual";
+import { handleMouseDownGlobal, handleMouseMoveGlobal, handleMouseUpGlobal } from "../pointer";
 
 function resolve(component: Component) {
   switch (component.type) {
@@ -31,34 +32,11 @@ function resolve(component: Component) {
 
 function Canvas() {
   const scene = useVisualScene(state => state.components);
-
-  const setSelected = useEditorStore(state => state.setSelected);
   const mode = useEditorStore(state => state.mode);
 
-  const dragHandlerRef = useRef<DragHandlerRef>(null);
   const canvasRef = useRef<SVGSVGElement | null>(null);
 
-  const mouseMoveHandlerRef = useRef<((e: React.MouseEvent) => void) | null>(
-    null,
-  );
-  const mouseUpHandlerRef = useRef<((e: React.MouseEvent) => void) | null>(
-    null,
-  );
-  const mouseDownCaptureHandlerRef = useRef<
-    ((e: React.MouseEvent) => void) | null
-  >(null);
-
   if (!scene) return <></>;
-
-  function select(id: string, e: React.MouseEvent) {
-    e.stopPropagation();
-    setSelected(id);
-    dragHandlerRef.current?.startDrag(e.nativeEvent, id);
-  }
-
-  function deselect() {
-    setSelected("");
-  }
 
   function toSVGSpace(cx: number, cy: number) {
     const boundingRect = canvasRef.current?.children[0];
@@ -69,67 +47,31 @@ function Canvas() {
     return { x, y };
   }
 
-  function clearHandler(event: string) {
-    if (event === "mousemove") mouseMoveHandlerRef.current = null;
-    if (event === "mouseup") mouseUpHandlerRef.current = null;
-    if (event === "mousedowncapture") mouseDownCaptureHandlerRef.current = null;
-  }
-
-  function registerHandler(
-    event: string,
-    handler: (e: React.MouseEvent) => void,
-  ) {
-    if (event === "mousedowncapture")
-      mouseDownCaptureHandlerRef.current = handler;
-    if (event === "mousemove") mouseMoveHandlerRef.current = handler;
-    if (event === "mouseup") mouseUpHandlerRef.current = handler;
-  }
-
   function handleMouseMove(e: React.MouseEvent) {
-    mouseMoveHandlerRef.current?.(e);
-  }
-
-  function handleMouseDownCapture(e: React.MouseEvent) {
-    mouseDownCaptureHandlerRef.current?.(e);
+    handleMouseMoveGlobal(e, toSVGSpace(e.clientX, e.clientY));
   }
 
   function handleMouseUp(e: React.MouseEvent) {
-    mouseUpHandlerRef.current?.(e);
+    handleMouseUpGlobal(e, toSVGSpace(e.clientX, e.clientY));
   }
 
-  function handleMouseDown() {
-    deselect();
-  }
-
-  function renderComponent(component: Component) {
-    const element = resolve(component);
-    return (
-      <g onMouseDown={(e) => select(component.id, e)} key={component.id}>
-        {element}
-      </g>
-    );
+  function handleMouseDown(e: React.MouseEvent) {
+    handleMouseDownGlobal(e, toSVGSpace(e.clientX, e.clientY));
   }
 
   const components = Object.values(scene)
     .sort((a, b) => a.zIndex - b.zIndex)
-    .map(renderComponent);
+    .map(resolve);
 
   return (
-    <CanvasContext.Provider
-      value={{ select, canvasRef, toSVGSpace, registerHandler, clearHandler }}
-    >
+    <CanvasContext.Provider value={{ toSVGSpace }} >
       <div
         className="w-[80vw] h-[80vh] mx-[10vw] my-[10vh] relative"
-        onMouseDownCapture={handleMouseDownCapture}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseDown={handleMouseDown}
       >
-        {mode === "create" ? (
-          <CreateOverlay />
-        ) : (
-          <Overlay ref={dragHandlerRef} />
-        )}
+        {mode === "create" ? <CreateOverlay /> : <Overlay />}
         <svg
           id="main"
           className="w-full h-full"

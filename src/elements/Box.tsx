@@ -16,7 +16,7 @@ function Box(component: BoxComponent) {
   );
   const path = constructPath(verts);
 
-  return <path d={path} {...component} />;
+  return <path d={path} {...component} data-id={component.id} />;
 }
 
 export default Box;

@@ -158,12 +158,9 @@ export function parseHit(pos: Vec2, blocks: VisualText): VisualCursor {
 }
 
 export function getVisualPosition(cursor: VisualCursor, blocks: VisualText) {
-  if (!cursor) return null;
-
   const block = blocks[cursor.blockI];
   const line = block?.lines[cursor.lineI];
   const span = line?.spans[cursor.spanI];
-  if (!span) return null;
 
   const x = line.x + span.x + span.charOffsets[cursor.charI];
   const y = block.y + line.y;

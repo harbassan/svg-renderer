@@ -115,7 +115,7 @@ function Speech(component: SpeechComponent) {
 
   return (
     <g>
-      <path d={constructPath()} {...component} />
+      <path d={constructPath()} {...component} data-id={component.id} />
     </g>
   );
 }

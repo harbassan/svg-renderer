@@ -2,16 +2,15 @@ import type { RelativeBounds } from "../types";
 import { expandToPath } from "../util";
 import { normalizeSelectionVisual } from "./util";
 import type {
+  VisualBlock,
   VisualCursor,
-  VisualSelection,
   VisualSpan,
-  VisualText,
 } from "./types";
+import useEditorStore from "../stores/editor";
 
 interface HighlightProps {
-  selection: VisualSelection;
   color?: string;
-  blocks: VisualText;
+  blocks: VisualBlock[];
   bounds: RelativeBounds;
 }
 
@@ -38,7 +37,10 @@ function generateHighlightSegment(
   return { x: span.x, width: span.width };
 }
 
-function Highlight({ selection, blocks, bounds, color }: HighlightProps) {
+function Highlight({ blocks, bounds, color }: HighlightProps) {
+  const selection = useEditorStore(state => state.visualSelection);
+  if (!selection.start || !selection.end) return;
+
   let { start, end } = normalizeSelectionVisual(selection);
 
   const center = {

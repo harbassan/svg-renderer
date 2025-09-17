@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
 import { modifyComponentBounds } from "../scene/modify";
-import type { Bounds, Vec2 } from "../types";
+import type { Vec2 } from "../types";
 import { deg, getBoxCenter, rotate, subtract } from "../util";
 import useEditorStore from "../stores/editor";
 import useVisualScene from "../stores/visual";
@@ -9,8 +9,6 @@ import useVisualScene from "../stores/visual";
 interface Props {
   x: number;
   y: number;
-  setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
-  isTransforming: React.RefObject<boolean>;
 }
 
 function getRotation(v: Vec2, origin: Vec2) {
@@ -18,11 +16,13 @@ function getRotation(v: Vec2, origin: Vec2) {
   return deg(Math.atan2(relative.x, -relative.y));
 }
 
-const RotationHandle = ({ x, y, setBounds, isTransforming }: Props) => {
+const RotationHandle = ({ x, y }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
   const selected = useEditorStore(state => state.selected)!;
+  const setBounds = useEditorStore(state => state.setMutationBounds);
   const scene = useVisualScene(scene => scene.components);
+  const setMode = useEditorStore(state => state.setMode);
 
   const bounds = scene[selected].bounds;
   const center = getBoxCenter(bounds.verts);
@@ -33,11 +33,11 @@ const RotationHandle = ({ x, y, setBounds, isTransforming }: Props) => {
     const position = toSVGSpace(event.clientX, event.clientY);
     const rotation = getRotation(position, center);
     modifyComponentBounds(selected, { rotation });
-    isTransforming.current = false;
+    setMode("normal");
   }
 
   function updateResize(event: React.MouseEvent) {
-    isTransforming.current = true;
+    setMode("mutation");
     const position = toSVGSpace(event.clientX, event.clientY);
     const rotation = getRotation(position, center);
     setBounds((prev) => ({ ...prev, rotation }));

@@ -19,8 +19,6 @@ interface Props {
   x: number;
   y: number;
   constraint: "x" | "y";
-  setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
-  isTransforming: React.RefObject<boolean>;
 }
 
 function modifyVerts(
@@ -38,13 +36,13 @@ const ConstrainedSpeechHandle = ({
   x,
   y,
   constraint,
-  setBounds,
-  isTransforming,
 }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
   const selected = useEditorStore(state => state.selected)!;
   const scene = useVisualScene(scene => scene.components);
+  const setBounds = useEditorStore(state => state.setMutationBounds);
+  const setMode = useEditorStore(state => state.setMode);
 
   const bounds = scene[selected].bounds;
   const verts = bounds.verts;
@@ -101,11 +99,11 @@ const ConstrainedSpeechHandle = ({
       ),
     );
     modifyComponentBounds(selected, { verts: newVerts });
-    isTransforming.current = false;
+    setMode("normal");
   }
 
   function updateResize(event: React.MouseEvent) {
-    isTransforming.current = true;
+    setMode("mutation");
     const position = rotate(
       toSVGSpace(event.clientX, event.clientY),
       center,

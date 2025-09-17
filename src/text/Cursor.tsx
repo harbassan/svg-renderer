@@ -1,19 +1,20 @@
 import type { RelativeBounds } from "../types";
 import { add, expandToPath } from "../util";
 import { getVisualPosition } from "./util";
-import type { VisualSelection, VisualText } from "./types";
+import useEditorStore from "../stores/editor";
+import type { VisualBlock } from "./types";
 
 function Cursor({
-  selection,
   blocks,
   bounds,
 }: {
-  selection: VisualSelection;
-  blocks: VisualText;
+  blocks: VisualBlock[];
   bounds: RelativeBounds;
 }) {
-  if (selection.start == null || selection.end) return null;
-  const { start } = selection;
+  const selection = useEditorStore(state => state.visualSelection);
+
+  const { start, end } = selection;
+  if (start == null || end) return null;
 
   const relativePosition = getVisualPosition(start, blocks);
   if (!relativePosition) return;

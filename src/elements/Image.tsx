@@ -19,6 +19,7 @@ function Image(component: ImageComponent) {
       width={relative.width}
       height={relative.height}
       transform={transform}
+      data-id={component.id}
       {...component}
     />
   );

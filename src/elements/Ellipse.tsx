@@ -19,7 +19,7 @@ function Ellipse(component: EllipseComponent) {
     `A${radius.x} ${radius.y} ${bounds.rotation} 1 1 ${anchors[0].x} ${anchors[0].y}`,
   ].join(" ");
 
-  return <path {...component} d={d} />;
+  return <path {...component} d={d} data-id={component.id} />;
 }
 
 export default Ellipse;

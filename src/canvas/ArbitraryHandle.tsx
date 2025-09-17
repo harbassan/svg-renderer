@@ -9,8 +9,6 @@ import useVisualScene from "../stores/visual";
 interface Props {
   x: number;
   y: number;
-  setBounds: React.Dispatch<React.SetStateAction<Bounds>>;
-  isTransforming: React.RefObject<boolean>;
 }
 
 function modifyVerts(verts: Vec2[], x: number, y: number, v: Vec2) {
@@ -20,11 +18,13 @@ function modifyVerts(verts: Vec2[], x: number, y: number, v: Vec2) {
   return newVerts;
 }
 
-const ArbitraryHandle = ({ x, y, setBounds, isTransforming }: Props) => {
+const ArbitraryHandle = ({ x, y }: Props) => {
   const { toSVGSpace, clearHandler, registerHandler } =
     useContext(CanvasContext);
   const selected = useEditorStore(state => state.selected)!;
+  const setBounds = useEditorStore(state => state.setMutationBounds);
   const scene = useVisualScene(scene => scene.components);
+  const setMode = useEditorStore(scene => scene.setMode);
 
   const bounds = scene[selected].bounds;
   const verts = bounds.verts;
@@ -50,11 +50,11 @@ const ArbitraryHandle = ({ x, y, setBounds, isTransforming }: Props) => {
     );
     const newVerts = correct(modifyVerts(verts, x, y, position));
     modifyComponentBounds(selected, { verts: newVerts });
-    isTransforming.current = false;
+    setMode("normal");
   }
 
   function updateResize(event: React.MouseEvent) {
-    isTransforming.current = true;
+    setMode("mutation");
     const position = rotate(
       toSVGSpace(event.clientX, event.clientY),
       center,

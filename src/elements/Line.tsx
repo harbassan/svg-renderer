@@ -6,7 +6,7 @@ function Line(component: LineComponent) {
 
   const path = constructPath(bounds.verts);
 
-  return <path d={path} {...component} />;
+  return <path d={path} {...component} data-id={component.id} />;
 }
 
 export default Line;
