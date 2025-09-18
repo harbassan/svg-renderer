@@ -1,8 +1,9 @@
 import type { RelativeBounds } from "../types";
 import { add, expandToPath } from "../util";
-import { getVisualPosition } from "./util";
+import { getVisualPosition } from "./cursor";
 import useEditorStore from "../stores/editor";
 import type { VisualBlock } from "./types";
+import { shallow } from "zustand/shallow";
 
 function Cursor({
   blocks,
@@ -14,7 +15,7 @@ function Cursor({
   const selection = useEditorStore(state => state.visualSelection);
 
   const { start, end } = selection;
-  if (start == null || end) return null;
+  if (start == null || (end && !shallow(start, end))) return null;
 
   const relativePosition = getVisualPosition(start, blocks);
   if (!relativePosition) return;

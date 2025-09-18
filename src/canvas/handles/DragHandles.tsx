@@ -1,12 +1,11 @@
 import ArbitraryHandle from "./ArbitraryHandle";
-import { getBoxCenter } from "../util";
+import ConstrainedHandle from "./ConstrainedHandle";
+import { getBoxCenter } from "../../util";
 import RotationHandle from "./RotationHandle";
-import ArbitrarySpeechHandle from "./ArbitrarySpeechHandle";
-import ConstrainedSpeechHandle from "./ConstrainedSpeechHandle";
-import useEditorStore from "../stores/editor";
-import useVisualScene from "../stores/visual";
+import useEditorStore from "../../stores/editor";
+import useVisualScene from "../../stores/visual";
 
-function SpeechHandles() {
+function DragHandles() {
   const selected = useEditorStore(state => state.selected)!;
   const scene = useVisualScene(scene => scene.components);
 
@@ -16,19 +15,19 @@ function SpeechHandles() {
 
   return (
     <>
-      <ArbitrarySpeechHandle
+      <ArbitraryHandle
         x={0}
         y={0}
       />
-      <ArbitrarySpeechHandle
+      <ArbitraryHandle
         x={1}
         y={0}
       />
-      <ArbitrarySpeechHandle
+      <ArbitraryHandle
         x={1}
         y={1}
       />
-      <ArbitrarySpeechHandle
+      <ArbitraryHandle
         x={0}
         y={1}
       />
@@ -38,33 +37,28 @@ function SpeechHandles() {
         y={rotatorY}
       />
 
-      <ConstrainedSpeechHandle
+      <ConstrainedHandle
         x={center.x}
         y={0}
         constraint="y"
       />
-      <ConstrainedSpeechHandle
+      <ConstrainedHandle
         x={center.x}
         y={1}
         constraint="y"
       />
-      <ConstrainedSpeechHandle
+      <ConstrainedHandle
         x={0}
         y={center.y}
         constraint="x"
       />
-      <ConstrainedSpeechHandle
+      <ConstrainedHandle
         x={1}
         y={center.y}
         constraint="x"
       />
-
-      <ArbitraryHandle
-        x={2}
-        y={2}
-      />
     </>
   );
-}
+};
 
-export default SpeechHandles;
+export default DragHandles;

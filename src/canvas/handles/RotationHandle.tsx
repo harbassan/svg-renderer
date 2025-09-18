@@ -1,10 +1,10 @@
 import { useContext } from "react";
-import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "../scene/modify";
-import type { Vec2 } from "../types";
-import { deg, getBoxCenter, rotate, subtract } from "../util";
-import useEditorStore from "../stores/editor";
-import useVisualScene from "../stores/visual";
+import CanvasContext from "../CanvasContext";
+import { modifyComponentBounds } from "../../scene/modify";
+import type { Vec2 } from "../../types";
+import { deg, getBoxCenter, rotate, subtract } from "../../util";
+import useEditorStore from "../../stores/editor";
+import useVisualScene from "../../stores/visual";
 
 interface Props {
   x: number;

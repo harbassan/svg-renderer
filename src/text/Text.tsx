@@ -3,6 +3,7 @@ import Cursor from "./Cursor";
 import Highlight from "./Highlight";
 import Rectangle from "../canvas/Rectangle";
 import { buildStyle } from "./build";
+import useEditorStore from "../stores/editor";
 
 function buildGroups(doc: VisualDocument) {
   return doc.blocks.map((block, i) => (
@@ -21,6 +22,10 @@ function buildGroups(doc: VisualDocument) {
 }
 
 function Text(doc: VisualDocument) {
+  const selected = useEditorStore(state => state.selected);
+
+  const isSelected = selected === doc.id;
+
   const { bounds } = doc;
   const center = {
     x: bounds.x + bounds.width / 2,
@@ -45,15 +50,15 @@ function Text(doc: VisualDocument) {
 
   return (
     <g className="select-none">
-      <Highlight
+      {isSelected && <Highlight
         color="blue"
         blocks={doc.blocks}
         bounds={bounds}
-      />
+      />}
       <g className="select-none" transform={transformation}>
         {buildGroups(doc)}
       </g>
-      <Cursor blocks={doc.blocks} bounds={bounds} />
+      {isSelected && <Cursor blocks={doc.blocks} bounds={bounds} />}
       <Rectangle
         bounds={selectionArea}
         rotationOrigin={center}

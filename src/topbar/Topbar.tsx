@@ -10,17 +10,17 @@ import {
   Undo,
   VectorSquare,
 } from "lucide-react";
-import { getComponent, removeComponent } from "./scene/scene";
+import { getComponent, removeComponent } from "../scene/scene";
 import { useEffect } from "react";
-import { redo, undo } from "./scene/history";
+import { redo, undo } from "../scene/history";
 import {
   modifyComponentProp,
   parseComponent,
   stringifyComponent,
-} from "./scene/modify";
-import useEditorStore from "./stores/editor";
-import TextSection from "./topbar/TextSection";
-import ShapeSection from "./topbar/ShapeSection";
+} from "../scene/modify";
+import useEditorStore from "../stores/editor";
+import ShapeSection from "./ShapeSection";
+import TextSection from "./TextSection";
 
 function Topbar() {
   const selected = useEditorStore(state => state.selected);

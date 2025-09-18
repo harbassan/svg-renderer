@@ -1,4 +1,3 @@
-import { equals } from "../scene/text";
 import useEditorStore from "../stores/editor";
 import useVisualScene from "../stores/visual";
 import type { RelativeBounds, Vec2 } from "../types";
@@ -11,15 +10,14 @@ import type {
   VisualLine,
   VisualSelection,
   VisualSpan,
-  VisualText,
 } from "./types";
 
-export function scanText(text: VisualText, y: number) {
-  for (let i = 0; i < text.length; i++) {
-    const block = text[i];
+export function scanDocument(blocks: VisualBlock[], y: number) {
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
     if (y <= block.y + block.height) return i;
   }
-  return text.length - 1;
+  return blocks.length - 1;
 }
 
 export function scanBlock(block: VisualBlock, y: number) {
@@ -46,7 +44,7 @@ export function scanSpan(span: VisualSpan, x: number) {
   return span.text.length;
 }
 
-export function toModel(cursor: VisualCursor | null, blocks: VisualText) {
+export function toModel(cursor: VisualCursor | null, blocks: VisualBlock[]) {
   if (cursor == null) return null;
   const visualBlock = blocks[cursor.blockI];
   const visualLine = visualBlock?.lines[cursor.lineI];
@@ -60,7 +58,7 @@ export function toModel(cursor: VisualCursor | null, blocks: VisualText) {
   };
 }
 
-export function toVisual(cursor: ModelCursor | null, blocks: VisualText) {
+export function toVisual(cursor: ModelCursor | null, blocks: VisualBlock[]) {
   if (cursor == null) return null;
   const visualBlock = blocks[cursor.blockI];
   for (let i = 0; i < visualBlock?.lines.length; i++) {
@@ -145,8 +143,8 @@ export function getRelativePosition(pos: Vec2, bounds: RelativeBounds) {
   return subtract(rotate(pos, center, -bounds.rotation), bounds);
 }
 
-export function parseHit(pos: Vec2, blocks: VisualText): VisualCursor {
-  const blockI = scanText(blocks, pos.y);
+export function parseHit(pos: Vec2, blocks: VisualBlock[]): VisualCursor {
+  const blockI = scanDocument(blocks, pos.y);
   const block = blocks[blockI];
   const lineI = scanBlock(block, pos.y);
   const line = block.lines[lineI];
@@ -157,7 +155,7 @@ export function parseHit(pos: Vec2, blocks: VisualText): VisualCursor {
   return cursor;
 }
 
-export function getVisualPosition(cursor: VisualCursor, blocks: VisualText) {
+export function getVisualPosition(cursor: VisualCursor, blocks: VisualBlock[]) {
   const block = blocks[cursor.blockI];
   const line = block?.lines[cursor.lineI];
   const span = line?.spans[cursor.spanI];
@@ -174,7 +172,7 @@ export function goToLineStart(cursor: VisualCursor) {
   return cursor;
 }
 
-export function goToLineEnd(cursor: VisualCursor, blocks: VisualText) {
+export function goToLineEnd(cursor: VisualCursor, blocks: VisualBlock[]) {
   const block = blocks[cursor.blockI];
   const line = block.lines[cursor.lineI];
   cursor.spanI = line.spans.length - 1;
@@ -189,7 +187,7 @@ export function goToLineEnd(cursor: VisualCursor, blocks: VisualText) {
 export function moveCursorLine(
   cursor: VisualCursor,
   desiredX: number,
-  blocks: VisualText,
+  blocks: VisualBlock[],
   direction: -1 | 1,
 ) {
   let { blockI, lineI } = cursor;

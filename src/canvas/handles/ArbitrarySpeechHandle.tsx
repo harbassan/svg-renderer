@@ -1,7 +1,7 @@
 import { useContext } from "react";
-import CanvasContext from "./CanvasContext";
-import { modifyComponentBounds } from "../scene/modify";
-import type { Vec2 } from "../types";
+import CanvasContext from "../CanvasContext";
+import { modifyComponentBounds } from "../../scene/modify";
+import type { Vec2 } from "../../types";
 import {
   add,
   clamp,
@@ -11,33 +11,23 @@ import {
   multiply,
   rotate,
   subtract,
-  translate,
-} from "../util";
-import useEditorStore from "../stores/editor";
-import useVisualScene from "../stores/visual";
+} from "../../util";
+import useEditorStore from "../../stores/editor";
+import useVisualScene from "../../stores/visual";
 
 interface Props {
   x: number;
   y: number;
-  constraint: "x" | "y";
 }
 
-function modifyVerts(
-  verts: Vec2[],
-  bound: number,
-  v: Vec2,
-  constraint: "x" | "y",
-) {
+function modifyVerts(verts: Vec2[], x: number, y: number, v: Vec2) {
   const newVerts = verts.map((v) => ({ ...v }));
-  newVerts[bound][constraint] = v[constraint];
+  newVerts[x].x = v.x;
+  newVerts[y].y = v.y;
   return newVerts;
 }
 
-const ConstrainedSpeechHandle = ({
-  x,
-  y,
-  constraint,
-}: Props) => {
+const ArbitrarySpeechHandle = ({ x, y }: Props) => {
   const { toSVGSpace, canvasRef } = useContext(CanvasContext);
   const selected = useEditorStore(state => state.selected)!;
   const scene = useVisualScene(scene => scene.components);
@@ -46,18 +36,10 @@ const ConstrainedSpeechHandle = ({
 
   const bounds = scene[selected].bounds;
   const verts = bounds.verts;
-
-  const bound = constraint === "x" ? x : y;
   const center = getBoxCenter(verts);
+  const point = { x: verts[x].x, y: verts[y].y };
+  const inversePoint = { x: verts[1 - x].x, y: verts[1 - y].y };
 
-  const point = {
-    x: constraint === "x" ? verts[x].x : x,
-    y: constraint === "y" ? verts[y].y : y,
-  };
-  const inversePoint = {
-    x: constraint === "x" ? verts[1 - x].x : x,
-    y: constraint === "y" ? verts[1 - y].y : y,
-  };
 
   function getNewTail(position: Vec2) {
     const diff = subtract(position, point);
@@ -85,12 +67,7 @@ const ConstrainedSpeechHandle = ({
     const position = rotate(
       toSVGSpace(e.clientX, e.clientY), center, -bounds.rotation
     );
-    const newVerts = modifyVerts(
-      modifyVerts(verts, bound, position, constraint),
-      2,
-      getNewTail(position),
-      constraint,
-    );
+    const newVerts = modifyVerts(modifyVerts(verts, x, y, position), 2, 2, getNewTail(position));
     const corrected = correct(newVerts, center, bounds.rotation);
     setBounds((prev) => ({ ...prev, verts: corrected }));
   }
@@ -101,7 +78,11 @@ const ConstrainedSpeechHandle = ({
     canvasRef.current.addEventListener("mouseup", endResize);
   }
 
-  const rotated = rotate(point, getBoxCenter(verts), bounds.rotation);
+  const rotated = rotate(
+    { x: verts[x].x, y: verts[y].y },
+    getBoxCenter(verts),
+    bounds.rotation,
+  );
 
   return (
     <g
@@ -114,4 +95,4 @@ const ConstrainedSpeechHandle = ({
   );
 };
 
-export default ConstrainedSpeechHandle;
+export default ArbitrarySpeechHandle;

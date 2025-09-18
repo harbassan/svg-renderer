@@ -1,50 +1,26 @@
-import DragHandles from "./DragHandles";
+import DragHandles from "./handles/DragHandles";
 import Ellipse from "../elements/Ellipse";
 import type { Bounds, Component } from "../types";
 import Box from "../elements/Box";
 import { getBoxCenter } from "../util";
 import Speech from "../elements/Speech";
 import Line from "../elements/Line";
-import LineHandles from "./LineHandles";
-import SpeechHandles from "./SpeechHandles";
+import LineHandles from "./handles/LineHandles";
+import SpeechHandles from "./handles/SpeechHandles";
 import Rectangle from "./Rectangle";
 import useEditorStore from "../stores/editor";
 import useVisualScene from "../stores/visual";
 
+const componentMap: Record<string, React.FC<any>> = {
+  speech: Speech,
+  ellipse: Ellipse,
+  box: Box,
+  line: Line,
+};
+
 function resolve(type: Component["type"], bounds: Bounds) {
-  switch (type) {
-    case "ellipse":
-      return (
-        <Ellipse
-          bounds={bounds}
-          fill="none"
-          stroke="green"
-          strokeWidth={2}
-        />
-      );
-    case "speech":
-      return (
-        <Speech
-          bounds={bounds}
-          fill="none"
-          stroke="green"
-          strokeWidth={2}
-        />
-      );
-    case "line":
-      return (
-        <Line bounds={bounds} stroke="green" strokeWidth={2} />
-      );
-    default:
-      return (
-        <Box
-          bounds={bounds}
-          fill="none"
-          stroke="green"
-          strokeWidth={2}
-        />
-      );
-  }
+  const Fc = componentMap[type] ?? Box;
+  return <Fc bounds={bounds} fill="none" stroke="green" strokeWidth={2} />;
 }
 
 function Overlay() {
@@ -56,7 +32,7 @@ function Overlay() {
 
   const component = scene[selected];
 
-  function resolveHandles() {
+  function ResolveHandles() {
     switch (component.type) {
       case "speech":
         return <SpeechHandles />;
@@ -82,12 +58,10 @@ function Overlay() {
             stroke="blue"
             strokeWidth={2}
           />
-          {resolveHandles()}
+          <ResolveHandles />
         </>
       )}
-      {mode.includes("mutation") && (
-        resolve(component ? component.type : createType, bounds)
-      )}
+      {mode.includes("mutation") && resolve(component?.type ?? createType, bounds)}
     </svg>
   );
 };

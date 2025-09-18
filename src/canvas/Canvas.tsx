@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import React, { useRef } from "react";
 import CanvasContext from "./CanvasContext";
 import Overlay from "./Overlay";
 import type { Component } from "../types";
@@ -8,31 +8,25 @@ import Ellipse from "../elements/Ellipse";
 import Box from "../elements/Box";
 import Image from "../elements/Image";
 import Line from "../elements/Line";
-import CreateOverlay from "./CreateOverlay";
-import useEditorStore from "../stores/editor";
 import useVisualScene from "../stores/visual";
-import { handleMouseDownGlobal, handleMouseMoveGlobal, handleMouseUpGlobal } from "../pointer";
+import { handleMouseDownGlobal, handleMouseMoveGlobal, handleMouseUpGlobal } from "../pointer/pointer";
+
+const componentMap: Record<string, React.FC<any>> = {
+  textbox: TextBox,
+  speech: Speech,
+  ellipse: Ellipse,
+  box: Box,
+  image: Image,
+  line: Line,
+};
 
 function resolve(component: Component) {
-  switch (component.type) {
-    case "textbox":
-      return <TextBox {...component} />;
-    case "box":
-      return <Box {...component} />;
-    case "image":
-      return <Image {...component} />;
-    case "ellipse":
-      return <Ellipse {...component} />;
-    case "speech":
-      return <Speech {...component} />;
-    case "line":
-      return <Line {...component} />;
-  }
+  const Fc = componentMap[component.type];
+  if (component) return <Fc key={component.id} {...component} />;
 }
 
 function Canvas() {
   const scene = useVisualScene(state => state.components);
-  const mode = useEditorStore(state => state.mode);
 
   const canvasRef = useRef<SVGSVGElement | null>(null);
 
@@ -51,17 +45,15 @@ function Canvas() {
     handleMouseMoveGlobal(e, toSVGSpace(e.clientX, e.clientY));
   }
 
-  function handleMouseUp(e: React.MouseEvent) {
-    handleMouseUpGlobal(e, toSVGSpace(e.clientX, e.clientY));
+  function handleMouseUp() {
+    handleMouseUpGlobal();
   }
 
   function handleMouseDown(e: React.MouseEvent) {
     handleMouseDownGlobal(e, toSVGSpace(e.clientX, e.clientY));
   }
 
-  const components = Object.values(scene)
-    .sort((a, b) => a.zIndex - b.zIndex)
-    .map(resolve);
+  const components = Object.values(scene).sort((a, b) => a.zIndex - b.zIndex).map(resolve);
 
   return (
     <CanvasContext.Provider value={{ toSVGSpace, canvasRef }} >
@@ -71,7 +63,7 @@ function Canvas() {
         onMouseUp={handleMouseUp}
         onMouseDown={handleMouseDown}
       >
-        {<Overlay />}
+        <Overlay />
         <svg
           id="main"
           className="w-full h-full"

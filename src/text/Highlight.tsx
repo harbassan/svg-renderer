@@ -1,6 +1,6 @@
 import type { RelativeBounds } from "../types";
 import { expandToPath } from "../util";
-import { normalizeSelectionVisual } from "./util";
+import { normalizeSelectionVisual } from "./cursor";
 import type {
   VisualBlock,
   VisualCursor,

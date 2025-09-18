@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import "./App.css";
 import Canvas from "./canvas/Canvas";
-import Topbar from "./Topbar";
+import Topbar from "./topbar/Topbar";
 import useVisualScene from "./stores/visual";
 import { buildVisualScene } from "./pipeline";
 import { getScene } from "./scene/scene";
-import { handleGlobal } from "./keyboard";
+import { handleGlobal } from "./keyboard/keyboard";
 
 function App() {
   const setComponents = useVisualScene(state => state.setComponents);
