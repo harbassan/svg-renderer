@@ -7,7 +7,7 @@ import { getVisualPosition, goToLineEnd, goToLineStart, moveCursorLine, moveCurs
 export function handleGlobal(e: KeyboardEvent) {
     const mode = useEditorStore.getState().mode;
 
-    if (mode === "text") handleTextMode(e);
+    if (mode.includes("text")) handleTextMode(e);
 }
 
 function handleTextMode(e: KeyboardEvent) {

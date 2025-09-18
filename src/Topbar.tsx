@@ -69,7 +69,7 @@ function Topbar() {
   }
 
   const switchCreate = (type: string) => {
-    setMode("create");
+    setMode(["create"]);
     setCreateType(type);
   };
 

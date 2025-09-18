@@ -11,12 +11,11 @@ import Rectangle from "./Rectangle";
 import useEditorStore from "../stores/editor";
 import useVisualScene from "../stores/visual";
 
-function resolve(component: Component, bounds: Bounds) {
-  switch (component.type) {
+function resolve(type: Component["type"], bounds: Bounds) {
+  switch (type) {
     case "ellipse":
       return (
         <Ellipse
-          {...component}
           bounds={bounds}
           fill="none"
           stroke="green"
@@ -26,7 +25,6 @@ function resolve(component: Component, bounds: Bounds) {
     case "speech":
       return (
         <Speech
-          {...component}
           bounds={bounds}
           fill="none"
           stroke="green"
@@ -35,13 +33,11 @@ function resolve(component: Component, bounds: Bounds) {
       );
     case "line":
       return (
-        <Line {...component} bounds={bounds} stroke="green" strokeWidth={2} />
+        <Line bounds={bounds} stroke="green" strokeWidth={2} />
       );
     default:
       return (
         <Box
-          {...component}
-          type="box"
           bounds={bounds}
           fill="none"
           stroke="green"
@@ -56,6 +52,7 @@ function Overlay() {
   const bounds = useEditorStore(state => state.mutationBounds);
   const scene = useVisualScene(scene => scene.components);
   const mode = useEditorStore(scene => scene.mode);
+  const createType = useEditorStore(scene => scene.createType);
 
   const component = scene[selected];
 
@@ -85,9 +82,11 @@ function Overlay() {
             stroke="blue"
             strokeWidth={2}
           />
-          {mode === "mutation" && resolve(component, bounds)}
           {resolveHandles()}
         </>
+      )}
+      {mode.includes("mutation") && (
+        resolve(component ? component.type : createType, bounds)
       )}
     </svg>
   );

@@ -31,11 +31,11 @@ const RotationHandle = ({ x, y }: Props) => {
     canvasRef.current.removeEventListener("mouseup", endResize);
     const { rotation } = useEditorStore.getState().mutationBounds;
     modifyComponentBounds(selected, { rotation });
-    setMode("normal");
+    setMode(["normal"]);
   }
 
   function updateResize(e: React.MouseEvent) {
-    setMode("mutation");
+    setMode(["mutation"]);
     const position = toSVGSpace(e.clientX, e.clientY);
     const rotation = getRotation(position, center);
     setBounds((prev) => ({ ...prev, rotation }));

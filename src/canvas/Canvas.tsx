@@ -71,7 +71,7 @@ function Canvas() {
         onMouseUp={handleMouseUp}
         onMouseDown={handleMouseDown}
       >
-        {mode === "create" ? <CreateOverlay /> : <Overlay />}
+        {<Overlay />}
         <svg
           id="main"
           className="w-full h-full"

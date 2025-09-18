@@ -2,9 +2,11 @@ import { create } from "zustand";
 import type { ModelSelection, VisualSelection } from "../text/types";
 import type { BaseTextStyle, Bounds, Vec2 } from "../types";
 
+type Mode = "normal" | "create" | "text" | "mutation";
+
 interface EditorState {
     selected: string | null;
-    mode: "normal" | "create" | "text" | "mutation";
+    mode: Mode[];
     selection: ModelSelection;
     visualSelection: VisualSelection;
     createType: string | null;
@@ -14,8 +16,11 @@ interface EditorState {
     mutationBounds: Bounds;
     offset: Vec2;
 
+    setMode: (mode: Mode[]) => void;
+    addMode: (mode: Mode) => void;
+    removeMode: (mode: Mode) => void;
+
     setSelected: (id: string | null) => void;
-    setMode: (mode: EditorState["mode"]) => void;
     setSelection: (selection: ModelSelection) => void;
     setVisualSelection: Dynamic<VisualSelection>;
     setCreateType: (type: string) => void;
@@ -38,7 +43,7 @@ function setter<K extends keyof EditorState>(set: Function, prop: K) {
 
 const useEditorStore = create<EditorState>()((set) => ({
     selected: null,
-    mode: "normal",
+    mode: ["normal"],
     selection: { start: null, end: null },
     visualSelection: { start: null, end: null },
     createType: null,
@@ -48,8 +53,11 @@ const useEditorStore = create<EditorState>()((set) => ({
     mutationBounds: { verts: [], rotation: 0 },
     offset: { x: 0, y: 0 },
 
-    setSelected: (id) => set({ selected: id }),
     setMode: (mode) => set({ mode }),
+    addMode: (arg) => set(state => ({ mode: [...state.mode, arg] })),
+    removeMode: (arg) => set(state => ({ mode: state.mode.filter((x: Mode) => x !== arg) })),
+
+    setSelected: (id) => set({ selected: id }),
     setSelection: (selection) => set({ selection }),
     setVisualSelection: setter(set, "visualSelection"),
     setCreateType: (type: string) => set({ createType: type }),
