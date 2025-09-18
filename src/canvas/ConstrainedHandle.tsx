@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import CanvasContext from "./CanvasContext";
-import type { Bounds, Vec2 } from "../types";
-import { getBoxCenter, rotate, subtract, translate } from "../util";
+import type { Vec2 } from "../types";
+import { correct, getBoxCenter, rotate, subtract, translate } from "../util";
 import { modifyComponentBounds } from "../scene/modify";
 import useEditorStore from "../stores/editor";
 import useVisualScene from "../stores/visual";
@@ -23,17 +23,14 @@ function modifyVerts(
   return newVerts;
 }
 
-const ConstrainedHandle = ({
-  x,
-  y,
-  constraint,
-}: Props) => {
-  const { toSVGSpace, clearHandler, registerHandler } =
-    useContext(CanvasContext);
+const ConstrainedHandle = ({ x, y, constraint }: Props) => {
+  const { toSVGSpace, canvasRef } = useContext(CanvasContext);
+
   const selected = useEditorStore(state => state.selected)!;
-  const scene = useVisualScene(scene => scene.components);
   const setBounds = useEditorStore(state => state.setMutationBounds);
   const setMode = useEditorStore(state => state.setMode);
+
+  const scene = useVisualScene(scene => scene.components);
 
   const bounds = scene[selected].bounds;
   const verts = bounds.verts;
@@ -41,44 +38,28 @@ const ConstrainedHandle = ({
   const bound = constraint === "x" ? x : y;
   const center = getBoxCenter(verts);
 
-  function correct(verts: Vec2[]) {
-    if (!bounds.rotation) return verts;
-    const newCenter = getBoxCenter(verts);
-    const correction = subtract(
-      rotate(newCenter, center, bounds.rotation),
-      newCenter,
-    );
-    return translate(verts, correction);
-  }
-
-  function endResize(event: React.MouseEvent) {
-    clearHandler("mousemove");
-    clearHandler("mouseup");
-    const position = rotate(
-      toSVGSpace(event.clientX, event.clientY),
-      center,
-      -bounds.rotation,
-    );
-    const newVerts = correct(modifyVerts(verts, bound, position, constraint));
-    modifyComponentBounds(selected, { verts: newVerts });
+  function endResize() {
+    canvasRef.current.removeEventListener("mousemove", updateResize);
+    canvasRef.current.removeEventListener("mouseup", endResize);
+    const { verts } = useEditorStore.getState().mutationBounds;
+    modifyComponentBounds(selected, { verts });
     setMode("normal");
   }
 
-  function updateResize(event: React.MouseEvent) {
+  function updateResize(e: React.MouseEvent) {
     setMode("mutation");
     const position = rotate(
-      toSVGSpace(event.clientX, event.clientY),
-      center,
-      -bounds.rotation,
+      toSVGSpace(e.clientX, e.clientY), center, -bounds.rotation
     );
-    const newVerts = correct(modifyVerts(verts, bound, position, constraint));
-    setBounds((prev) => ({ ...prev, verts: newVerts }));
+    const newVerts = modifyVerts(verts, bound, position, constraint);
+    const corrected = correct(newVerts, center, bounds.rotation);
+    setBounds((prev) => ({ ...prev, verts: corrected }));
   }
 
   function startResize(e: React.MouseEvent) {
     e.stopPropagation();
-    registerHandler("mousemove", (e: React.MouseEvent) => updateResize(e));
-    registerHandler("mouseup", (e: React.MouseEvent) => endResize(e));
+    canvasRef.current.addEventListener("mousemove", updateResize);
+    canvasRef.current.addEventListener("mouseup", endResize)
   }
 
   let point = {

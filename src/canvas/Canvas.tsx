@@ -64,7 +64,7 @@ function Canvas() {
     .map(resolve);
 
   return (
-    <CanvasContext.Provider value={{ toSVGSpace }} >
+    <CanvasContext.Provider value={{ toSVGSpace, canvasRef }} >
       <div
         className="w-[80vw] h-[80vh] mx-[10vw] my-[10vh] relative"
         onMouseMove={handleMouseMove}

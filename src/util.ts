@@ -129,3 +129,13 @@ export function expandToPath({
   verts = rotateMany(expandBoxVerts(verts), origin, rotation);
   return constructPath(verts);
 }
+
+export function correct(verts: Vec2[], origin: Vec2, rotation: number) {
+  if (!rotation) return verts;
+  const newCenter = getBoxCenter(verts);
+  const correction = subtract(
+    rotate(newCenter, origin, rotation),
+    newCenter,
+  );
+  return translate(verts, correction);
+}
