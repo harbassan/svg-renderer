@@ -1,105 +1,74 @@
-import { fastIsEqual } from "fast-is-equal";
-import { modifyComponentProp } from "./modify";
+import { commiter } from "./modify";
 import { getComponentProp } from "./scene";
 import type { ModelCursor, ModelSelection } from "../text/types";
-import type { BaseTextStyle, ModelBlock, ModelSpan } from "../types";
+import type { BaseTextStyle, ModelBlock, ModelDocument, ModelSpan } from "../types";
 import { squash } from "../text/build";
+import useEditorStore from "../stores/editor";
+import { objectDiff } from "../util";
+import { shallow } from "zustand/shallow";
 
-export function insertChar(id: string, pos: ModelCursor, char: string) {
-  const target = getComponentProp(
-    id,
-    `document.blocks.${pos.blockI}.spans.${pos.spanI}.text`,
-  );
-  const modified = target.slice(0, pos.charI) + char + target.slice(pos.charI);
-  modifyComponentProp(
-    id,
-    `document.blocks.${pos.blockI}.spans.${pos.spanI}.text`,
-    modified,
-  );
+export const insertChar = commiter((id: string, cursor: ModelCursor, char: string) => {
+  const { activeStyle } = useEditorStore.getState();
+  const doc = getComponentProp(id, "document") as ModelDocument;
 
-  return moveCursor(id, pos, 1);
-}
+  const diff = objectDiff(activeStyle!, squash(doc.style));
 
-export function deleteChar(id: string, pos: ModelCursor) {
-  if (!pos.blockI && !pos.spanI && !pos.charI) return pos; // start of text
+  const block = doc.blocks[cursor.blockI];
+  const target = block.spans[cursor.spanI];
 
-  const newCursor = moveCursor(id, pos, -1);
+  if (shallow(diff, target.style)) { // if we're the same style as prev span
+    const modified = target.text.slice(0, cursor.charI) + char + target.text.slice(cursor.charI);
+    block.spans[cursor.spanI].text = modified;
+  } else { // otherwise we need to make a new span
+    splitSpan(doc.blocks, cursor);
+    block.spans.splice(cursor.spanI + 1, 0, { text: char, style: diff })
+  }
 
-  const blocks: ModelBlock[] = getComponentProp(id, `document.blocks`);
-  const spans = blocks[pos.blockI].spans;
+  return moveCursor(id, cursor, 1);
+});
 
-  if (newCursor.blockI === pos.blockI && newCursor.spanI === pos.spanI) {
+export const deleteChar = commiter((id: string, cursor: ModelCursor) => {
+  if (!cursor.blockI && !cursor.spanI && !cursor.charI) return cursor; // start of text
+
+  const newCursor = moveCursor(id, cursor, -1);
+
+  const doc = getComponentProp(id, `document`) as ModelDocument;
+  const spans = doc.blocks[cursor.blockI].spans;
+
+  if (newCursor.blockI === cursor.blockI && newCursor.spanI === cursor.spanI) {
     // within span
-    const target = spans[pos.spanI].text;
-    const modified = target.slice(0, pos.charI - 1) + target.slice(pos.charI);
-    spans[pos.spanI].text = modified;
-  } else if (newCursor.blockI === pos.blockI) { // at span boundary
-    const target = spans[pos.spanI - 1].text;
+    const target = spans[cursor.spanI].text;
+    const modified = target.slice(0, cursor.charI - 1) + target.slice(cursor.charI);
+    spans[cursor.spanI].text = modified;
+  } else if (newCursor.blockI === cursor.blockI) { // at span boundary
+    const target = spans[cursor.spanI - 1].text;
     if (newCursor.charI === target.length) { // first char in span
-      const modified = spans[pos.spanI].text.slice(1);
-      spans[pos.spanI].text = modified;
+      const modified = spans[cursor.spanI].text.slice(1);
+      spans[cursor.spanI].text = modified;
     } else { // last char in prev span
       const modified = target.slice(0, target.length - 1);
-      spans[pos.spanI - 1].text = modified;
+      spans[cursor.spanI - 1].text = modified;
     }
   } else { // at block boundary
-    blocks.splice(pos.blockI, 1);
-    blocks[pos.blockI - 1].spans.push(...spans);
+    doc.blocks.splice(cursor.blockI, 1);
+    doc.blocks[cursor.blockI - 1].spans.push(...spans);
   }
-
-  modifyComponentProp(id, `document.blocks`, normalizeBlocks(blocks));
 
   return newCursor;
-}
+});
 
-function splitSpan(blocks: ModelBlock[], cursor: ModelCursor) {
-  const block = blocks[cursor.blockI];
-  const span = block.spans[cursor.spanI];
-
-  const left = span.text.slice(0, cursor.charI);
-  const right = span.text.slice(cursor.charI);
-
-  // already at boundary
-  if (!left.length || !right.length) return cursor;
-
-  const leftSpan = { ...span, text: left };
-  const rightSpan = { ...span, text: right };
-
-  block.spans.splice(cursor.spanI, 1, leftSpan, rightSpan);
-
-  return cursor;
-}
-
-function splitSelection(id: string, selection: ModelSelection) {
-  const blocks = getComponentProp(id, "document.blocks");
-  const end = splitSpan(blocks, selection.end!);
-
-  const before = blocks[selection.start!.blockI].spans.length;
-  const start = splitSpan(blocks, selection.start!);
-
-  if (before !== blocks[start.blockI].spans.length) { // the starting span actually split
-    if (end.blockI === start.blockI) {
-      end.spanI++;
-      if (end.spanI === start.spanI + 1)
-        end.charI = blocks[end.blockI].spans[end.spanI].text.length;
-    }
-  }
-
-  return { start, end, blocks };
-}
-
-export function insertSelection(
-  id: string,
-  selection: ModelSelection,
-  char: string,
-) {
-  const cursor = deleteSelection(id, selection);
+// NOTE: will cause two distinct state operations in history
+export function insertSelection(id: string, sel: ModelSelection, char: string) {
+  const cursor = deleteSelection(id, sel);
   return insertChar(id, cursor, char);
 }
 
-export function deleteSelection(id: string, selection: ModelSelection) {
-  const normd = normalizeSelection(selection);
-  const { start, end, blocks } = splitSelection(id, normd);
+export const deleteSelection = commiter((id: string, sel: ModelSelection) => {
+  const doc = getComponentProp(id, `document`) as ModelDocument;
+  const { blocks } = doc;
+
+  const normd = normaliseSelection(sel);
+  const { start, end } = isolateSelection(id, normd);
 
   const startBlock = blocks[start.blockI];
   const endBlock = blocks[end.blockI];
@@ -112,98 +81,92 @@ export function deleteSelection(id: string, selection: ModelSelection) {
   const newBlock = { spans: newSpans, style: startBlock.style };
   blocks.splice(start.blockI, end.blockI - start.blockI + 1, newBlock);
 
-  modifyComponentProp(id, "document.blocks", normalizeBlocks(blocks));
+  return normaliseCursor(blocks, start);
+});
 
-  return normalizeCursor(blocks, start);
-}
+export const createBlock = commiter((id: string, cursor: ModelCursor) => {
+  const blocks = getComponentProp(id, `document.blocks`) as ModelBlock[];
+  const block = blocks[cursor.blockI];
 
-export function normalizeBlocks(blocks: ModelBlock[]) {
-  return blocks
-    .map((block) => {
-      const filteredSpans = block.spans.filter((span, i) => {
-        const isFinal = i === block.spans.length - 1;
-        return span.text.length > 0 || isFinal;
-      });
+  splitSpan(blocks, cursor);
 
-      const mergedSpans: ModelSpan[] = [];
-      for (const span of filteredSpans) {
-        const last = mergedSpans[mergedSpans.length - 1];
-        if (last && fastIsEqual(last.style, span.style)) {
-          last.text += span.text;
-        } else {
-          mergedSpans.push({ ...span });
-        }
-      }
+  const oldSpans = cursor.charI > 0 ? block.spans.slice(0, cursor.spanI + 1) : [];
+  const newSpans = block.spans.slice(cursor.spanI + 1);
 
-      return { ...block, spans: mergedSpans };
-    })
-    .filter((block) => block.spans.length > 0);
-}
+  if (!newSpans.length) {
+    const span = block.spans[cursor.spanI];
+    newSpans.push({ text: "", style: span.style ?? {} });
+  }
 
-export function createBlock(id: string, pos: ModelCursor) {
-  const blocks: ModelBlock[] = getComponentProp(id, `document.blocks`);
-  const old = blocks[pos.blockI];
+  // start of the block assumes document style
+  if (!oldSpans.length) oldSpans.push({ text: "", style: {} });
 
-  const oldSpans = [];
-  const newSpans = [];
+  block.spans = oldSpans;
+  blocks.splice(cursor.blockI + 1, 0, { ...block, spans: newSpans });
 
-  for (let i = 0; i < old.spans.length; i++) {
-    const span = old.spans[i];
-    if (i < pos.spanI) {
-      oldSpans.push({ ...span });
-    } else if (i === pos.spanI) {
-      const afterCursor = span.text.slice(pos.charI);
-      const beforeCursor = span.text.slice(0, pos.charI);
-      if (beforeCursor.length) oldSpans.push({ ...span, text: beforeCursor });
-      if (afterCursor.length) newSpans.push({ ...span, text: afterCursor });
-    } else {
-      newSpans.push({ ...span });
+  return { blockI: cursor.blockI + 1, spanI: 0, charI: 0 };
+});
+
+export const applySelectionStyle = commiter((id: string, sel: ModelSelection, style: Partial<BaseTextStyle>) => {
+  const doc = getComponentProp(id, `document`) as ModelDocument;
+  const { blocks } = doc;
+
+  const { start, end } = isolateSelection(id, sel);
+
+  if (style.alignment || style.lineHeight) {
+    for (let i = sel.start!.blockI; i <= sel.end!.blockI; i++) {
+      if (style.alignment) blocks[i].style!.alignment = style.alignment;
+      if (style.lineHeight) blocks[i].style!.lineHeight = style.lineHeight;
     }
   }
 
-  if (newSpans.length === 0) {
-    const span = old.spans[pos.spanI];
-    newSpans.push({ text: "", style: span ? span.style : {} });
-  }
-  if (oldSpans.length === 0) {
-    const span = old.spans[pos.spanI];
-    oldSpans.push({ text: "", style: span ? span.style : {} });
+  const rangeStart = { ...start, spanI: start.spanI + 1 };
+  for (const span of spanRange(blocks, { start: rangeStart, end })) {
+    span.style = { ...span.style, ...style };
   }
 
-  const newBlocks = [...blocks];
-  newBlocks.splice(
-    pos.blockI,
-    1,
-    { ...old, spans: oldSpans },
-    { ...old, spans: newSpans },
-  );
-  modifyComponentProp(id, `document.blocks`, newBlocks);
-  return { blockI: pos.blockI + 1, spanI: 0, charI: 0 };
+  return normaliseSelection({ start, end });
+});
+
+export function getStyleForSelection(id: string, sel: ModelSelection) {
+  const doc = getComponentProp(id, "document");
+  const { start, end } = sel;
+
+  if (start == null) return doc.style; // no selection
+
+  if (end) { // full sel
+    // TODO: choose the least specificity present across selected spans (prefer false for toggles, unknown for values)
+    const block = doc.blocks[end.blockI];
+    return squash(doc.style, block.style, block.spans[end.spanI].style);
+  }
+
+  // start only (cursor)
+  const block = doc.blocks[start.blockI];
+  return squash(doc.style, block.style, block.spans[start.spanI].style);
 }
 
-function isEndBeforeStart(start: ModelCursor, end: ModelCursor) {
+function isReversed(start: ModelCursor, end: ModelCursor) {
   if (end.blockI !== start.blockI) return end.blockI < start.blockI;
   if (end.spanI !== start.spanI) return end.spanI < start.spanI;
   return end.charI < start.charI;
 }
-
-export function normalizeSelection(selection: ModelSelection) {
-  let { start, end } = selection;
-  if (start && end && isEndBeforeStart(start, end)) [start, end] = [end, start];
+function normaliseSelection(sel: ModelSelection) {
+  let { start, end } = sel;
+  if (start && end && isReversed(start, end)) [start, end] = [end, start];
   return { start, end };
 }
 
-function normalizeCursor(blocks: ModelBlock[], pos: ModelCursor) {
+function normaliseCursor(blocks: ModelBlock[], cursor: ModelCursor) {
   // if at start of span but not the first span then move to prev span end
-  if (pos.charI === 0 && pos.spanI > 0) {
-    const prev = blocks[pos.blockI].spans[pos.spanI - 1];
+  if (cursor.charI === 0 && cursor.spanI > 0) {
+    const prev = blocks[cursor.blockI].spans[cursor.spanI - 1];
     return {
-      blockI: pos.blockI,
-      spanI: pos.spanI - 1,
+      blockI: cursor.blockI,
+      spanI: cursor.spanI - 1,
       charI: prev.text.length,
     };
   }
-  return pos;
+  return cursor;
 }
 
 function moveCursor(id: string, cursor: ModelCursor, amount: number) {
@@ -251,19 +214,11 @@ function moveCursor(id: string, cursor: ModelCursor, amount: number) {
     }
   }
 
-  return normalizeCursor(blocks, { blockI, spanI, charI });
+  return normaliseCursor(blocks, { blockI, spanI, charI });
 }
 
-export function equals(c1: ModelCursor | null, c2: ModelCursor | null) {
-  if (c1 == null && c2 == null) return true;
-  if (c1 == null || c2 == null) return false;
-  return (
-    c1.blockI === c2.blockI && c1.charI === c2.charI && c1.spanI === c2.spanI
-  );
-}
-
-function* spanRange(blocks: ModelBlock[], selection: ModelSelection) {
-  const { start, end } = normalizeSelection(selection) as { start: ModelCursor, end: ModelCursor };
+function* spanRange(blocks: ModelBlock[], sel: ModelSelection) {
+  const { start, end } = normaliseSelection(sel) as { start: ModelCursor, end: ModelCursor };
   for (let b = start.blockI; b <= end.blockI; b++) {
     const startSpan = (b === start.blockI ? start.spanI : 0);
     const endSpan = (b === end.blockI ? end.spanI : blocks[b].spans.length - 1);
@@ -274,41 +229,73 @@ function* spanRange(blocks: ModelBlock[], selection: ModelSelection) {
   }
 }
 
-export function applySelectionStyle(id: string, selection: ModelSelection, style: Partial<BaseTextStyle>) {
-  const { start, end, blocks } = splitSelection(id, selection);
+function splitSpan(blocks: ModelBlock[], cursor: ModelCursor) {
+  const block = blocks[cursor.blockI];
+  const span = block.spans[cursor.spanI];
 
-  if (style.alignment || style.lineHeight) {
-    for (let i = selection.start!.blockI; i <= selection.end!.blockI; i++) {
-      if (style.alignment) blocks[i].style.alignment = style.alignment;
-      if (style.lineHeight) blocks[i].style.lineHeight = style.lineHeight;
+  const left = span.text.slice(0, cursor.charI);
+  const right = span.text.slice(cursor.charI);
+
+  // already at boundary
+  if (!left.length || !right.length) return cursor;
+
+  const leftSpan = { ...span, text: left };
+  const rightSpan = { ...span, text: right };
+
+  block.spans.splice(cursor.spanI, 1, leftSpan, rightSpan);
+
+  return cursor;
+}
+
+function isolateSelection(id: string, sel: ModelSelection) {
+  const blocks = getComponentProp(id, "document.blocks");
+  const end = splitSpan(blocks, sel.end!);
+
+  const before = blocks[sel.start!.blockI].spans.length;
+  const start = splitSpan(blocks, sel.start!);
+
+  if (before !== blocks[start.blockI].spans.length) { // the starting span actually split
+    if (end.blockI === start.blockI) {
+      end.spanI++;
+      if (end.spanI === start.spanI + 1)
+        end.charI = blocks[end.blockI].spans[end.spanI].text.length;
     }
   }
 
-  start.spanI++;
-  for (const span of spanRange(blocks, { start, end })) {
-    span.style = { ...span.style, ...style };
-  }
-  start.spanI--;
-
-  // TODO: normalise these results and update the cursor accordingly
-  modifyComponentProp(id, "document.blocks", blocks);
-
-  return normalizeSelection({ start, end });
+  return { start, end };
 }
 
-export function getStyleForSelection(id: string, selection: ModelSelection) {
-  const doc = getComponentProp(id, "document");
-  const { start, end } = selection;
+function normaliseDocument(doc: ModelDocument, cursor: ModelCursor) {
+  const newCursor = { ...cursor };
 
-  if (start == null) return doc.style; // no selection
+  for (const block of doc.blocks) {
+    const normdSpans = [] as ModelSpan[];
+    for (let s = 0; s < block.spans.length; s++) {
+      const span = block.spans[s];
 
-  if (end) { // full selection
-    // TODO: choose the least specificity present across selected spans (prefer false for toggles, unknown for values)
-    const block = doc.blocks[end.blockI];
-    return squash(doc.style, block.style, block.spans[end.spanI].style);
+      // remove empty spans except for ones at the end of a block
+      if (s < block.spans.length - 1 && span.text.length === 0) {
+        if (s < cursor.spanI) newCursor.spanI--;
+        continue;
+      };
+
+      // merge adjacent spans with the same style
+      const style = objectDiff(span.style!, squash(doc.style));
+      const prev = normdSpans[normdSpans.length - 1];
+      if (prev && shallow(style, prev.style)) {
+        prev.text += span.text;
+        if (s <= cursor.spanI) newCursor.spanI--;
+        if (s === cursor.spanI) {
+          newCursor.charI += prev.text.length;
+        }
+        continue;
+      }
+
+      normdSpans.push(span);
+    }
+
+    block.spans = normdSpans;
   }
 
-  // start only (cursor)
-  const block = doc.blocks[start.blockI];
-  return squash(doc.style, block.style, block.spans[start.spanI].style);
+  return newCursor;
 }

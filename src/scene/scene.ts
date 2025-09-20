@@ -2,8 +2,10 @@ import { v4 } from "uuid";
 import { updateHistory } from "./history";
 import { getObject, merge } from "./util";
 import useVisualScene from "../stores/visual";
-import { buildVisualComponent, generateVisualCursor } from "../pipeline";
+import { buildVisualComponent } from "../pipeline";
 import type { Component } from "../types";
+
+// NOTE: *mutable* store
 
 let scene = {
   components: {
@@ -165,29 +167,6 @@ let scene = {
 // @ts-ignore
 window.scene = scene;
 
-interface listener {
-  id: string;
-  type: string;
-  callback: () => void;
-}
-
-const listeners = [] as Array<listener>;
-
-export function registerListener(listener: listener) {
-  listeners.push(listener);
-}
-
-export function unregisterListener(id: string) {
-  const i = listeners.findIndex((l) => l.id == id);
-  if (i != -1) listeners.splice(i, 1);
-}
-
-function emitEvent(type: string) {
-  for (const listener of listeners) {
-    if (listener.type == type) listener.callback();
-  }
-}
-
 export function getScene() {
   return scene;
 }
@@ -207,15 +186,11 @@ export function addComponent(props: Record<string, any>) {
   const component = { ...props } as Component;
   scene.components[props.id] = component;
   useVisualScene.getState().updateComponent(buildVisualComponent(component));
-  scene = { ...scene };
-  emitEvent("update_component");
 }
 
 export function removeComponent(id: string) {
   delete scene.components[id];
   useVisualScene.getState().deleteComponent(id);
-  scene = { ...scene };
-  emitEvent("update_component");
 }
 
 export function createComponent(props: Record<string, any>) {
@@ -228,8 +203,7 @@ export function createComponent(props: Record<string, any>) {
 export function modifyComponent(id: string, props: Record<string, any>) {
   const component = scene.components[id];
   if (!component) return;
-  scene.components[id] = merge(component, props);
-  useVisualScene.getState().updateComponent(buildVisualComponent(merge(component, props) as Component));
-  scene = { ...scene };
-  emitEvent("update_component");
+  const newComponent = merge(component, props) as Component;
+  scene.components[id] = newComponent;
+  useVisualScene.getState().updateComponent(buildVisualComponent(newComponent));
 }

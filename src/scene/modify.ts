@@ -8,6 +8,25 @@ import {
 } from "./scene";
 import { translate } from "../util";
 import { getObject, merge } from "./util";
+import useVisualScene from "../stores/visual";
+import { buildVisualComponent } from "../pipeline";
+
+// wrapper for state mutating functions, will capture both state and operation
+export function commiter<A extends [string, ...any[]], R>(fn: (...args: A) => R) {
+  return function(...args: A): R {
+    const id = args[0];
+    const component = getComponent(id);
+
+    const prev = structuredClone(component);
+    const output = fn(...args);
+
+    updateHistory(id, prev);
+
+    useVisualScene.getState().updateComponent(buildVisualComponent(component));
+
+    return output;
+  }
+}
 
 export function modifyComponentProp(id: string, prop: string, val: any) {
   const component = getComponent(id);

@@ -9,7 +9,7 @@ function buildGroups(doc: VisualDocument) {
   return doc.blocks.map((block, i) => (
     <g key={i}>
       {block.lines.map((line, j) => (
-        <text key={j} x={line.x} y={block.y + line.y + line.baseline}>
+        <text key={j} x={line.x} y={block.y + line.y + line.baseline} style={{ whiteSpace: "pre" }}>
           {line.spans.map((span, k) => (
             <tspan key={k} style={buildStyle(span.style)}>
               {span.text}
