@@ -44,18 +44,24 @@ export function scanSpan(span: VisualSpan, x: number) {
   return span.text.length;
 }
 
-export function toModel(cursor: VisualCursor | null, blocks: VisualBlock[]) {
+function toModel(cursor: VisualCursor | null, blocks: VisualBlock[]) {
   if (cursor == null) return null;
   const visualBlock = blocks[cursor.blockI];
   const visualLine = visualBlock?.lines[cursor.lineI];
   const visualSpan = visualLine?.spans[cursor.spanI];
   if (!visualSpan) return null;
 
-  return {
-    blockI: cursor.blockI,
-    spanI: visualSpan.parentId,
-    charI: visualSpan.startIndex + cursor.charI,
-  };
+  // normalisation (handle case where a model span boundary exists at a visual line boundary)
+  let spanI = visualSpan.parentId;
+  let charI = visualSpan.startIndex + cursor.charI;
+  if (charI === 0 && spanI > 0) {
+    spanI--;
+    const prevLine = visualBlock.lines[cursor.lineI - 1];
+    const prevSpan = prevLine.spans[prevLine.spans.length - 1];
+    charI = prevSpan.startIndex + prevSpan.text.length;
+  }
+
+  return { blockI: cursor.blockI, spanI, charI };
 }
 
 export function toVisual(cursor: ModelCursor | null, blocks: VisualBlock[]) {
@@ -76,7 +82,7 @@ export function toVisual(cursor: ModelCursor | null, blocks: VisualBlock[]) {
             spanI: j,
             charI: cursor.charI - span.startIndex,
           };
-          return normalizeVisualCursor(newCursor, blocks);
+          return normaliseVisualCursor(newCursor, blocks);
         }
       }
     }
@@ -113,7 +119,8 @@ export function syncVisualCursor() {
   editorState.setVisualSelection(toVisualSelection(editorState.selection, blocks));
 }
 
-export function normalizeVisualCursor(
+// force cursor at line extreme to wrap to the start of the next line (more intuitive)
+export function normaliseVisualCursor(
   cursor: VisualCursor,
   blocks: VisualBlock[],
 ) {
@@ -148,11 +155,17 @@ export function parseHit(pos: Vec2, blocks: VisualBlock[]): VisualCursor {
   const block = blocks[blockI];
   const lineI = scanBlock(block, pos.y);
   const line = block.lines[lineI];
-  const spanI = scanLine(line, pos.x);
-  const charI = scanSpan(line.spans[spanI], pos.x - line.x);
+  let spanI = scanLine(line, pos.x);
+  let charI = scanSpan(line.spans[spanI], pos.x - line.x);
 
-  const cursor = { blockI, lineI, spanI, charI };
-  return cursor;
+  // normalisation (force a cursor at span start to prev span end, excluding first line spans)
+  if (charI === 0 && spanI > 0) {
+    const prevSpan = line.spans[spanI - 1];
+    charI = prevSpan.text.length;
+    spanI--;
+  }
+
+  return { blockI, lineI, spanI, charI };
 }
 
 export function getVisualPosition(cursor: VisualCursor, blocks: VisualBlock[]) {
@@ -238,7 +251,7 @@ export function moveCursorVisual(
 ) {
   if (pos == null) return { blockI: 0, spanI: 0, lineI: 0, charI: 0 };
 
-  let { blockI, spanI, lineI, charI } = pos;
+  let { blockI, spanI, lineI, charI } = normaliseVisualCursor(pos, blocks);
 
   while (amount !== 0) {
     const block = blocks[blockI];

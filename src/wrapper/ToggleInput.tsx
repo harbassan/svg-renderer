@@ -14,9 +14,9 @@ function ToggleInput({ children, value, onToggle, enabled, disabled }: ToggleInp
   }
 
   return (
-    <button className={`button ${active && "active"}`} onClick={handleClick}>
+    <div className={`button ${active && "active"}`} onClick={handleClick}>
       {children}
-    </button>
+    </div>
   );
 }
 

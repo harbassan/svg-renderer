@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { applySelectionStyle, getStyleForSelection } from "../scene/text";
 import { modifyComponentProp } from "../scene/modify";
 import type { BaseTextStyle } from "../types";
+import { syncVisualCursor } from "../text/cursor";
 
 function TextSection() {
     const selected = useEditorStore(state => state.selected);
@@ -30,12 +31,13 @@ function TextSection() {
         if (selection?.end) {
             const newSelection = applySelectionStyle(selected!, selection, { [prop]: value })
             useEditorStore.getState().setSelection(newSelection);
+            syncVisualCursor();
         } else if (selection?.start) {
             if (prop === "lineHeight" || prop === "alignment") {
-                modifyComponentProp(selected!, `content.blocks.${selection.start.blockI}.style.${prop}`, value);
+                modifyComponentProp(selected!, `document.blocks.${selection.start.blockI}.style.${prop}`, value);
             }
         } else {
-            modifyComponentProp(selected!, `content.style.${prop}`, value);
+            modifyComponentProp(selected!, `document.style.${prop}`, value);
         }
 
         setStyle({ ...style!, [prop]: value });

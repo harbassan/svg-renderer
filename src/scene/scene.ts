@@ -113,15 +113,16 @@ let scene = {
             style: {},
             spans: [
               {
+                style: {},
                 text: "Hello from the ",
               },
               {
-                text: "world below, I am the ruler of this place. These are my subjects.",
                 style: {
                   fontWeight: "bold",
                   textColor: "#ff0000",
                   highlightColor: "#330000",
                 },
+                text: "world below, I am the ruler of this place. These are my subjects.",
               },
             ],
           },
@@ -130,30 +131,33 @@ let scene = {
             style: {},
             spans: [
               {
+                style: {},
                 text: "We are pleased to meet you",
               },
               {
-                text: " after all this time ",
                 style: {
                   fontFamily: "Times New Roman",
                   fontSize: 40,
                   textColor: "#ff00ff",
                 },
+                text: " after all this time ",
               },
               {
+                style: {},
                 text: "since you last came here.",
               },
             ],
           },
           {
-            style: {
-              fontFamily: "Georgia",
-              fontStyle: "italic",
-              fontSize: 20,
-              textDecoration: "underline",
-            },
+            style: {},
             spans: [
               {
+                style: {
+                  fontFamily: "Georgia",
+                  fontStyle: "italic",
+                  fontSize: 20,
+                  textDecoration: "underline",
+                },
                 text: "Please follow me...",
               },
             ],

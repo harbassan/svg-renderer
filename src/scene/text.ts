@@ -8,10 +8,9 @@ import { objectDiff } from "../util";
 import { shallow } from "zustand/shallow";
 
 export const insertChar = commiter((id: string, cursor: ModelCursor, char: string) => {
-  const { activeStyle } = useEditorStore.getState();
   const doc = getComponentProp(id, "document") as ModelDocument;
 
-  const diff = objectDiff(activeStyle!, squash(doc.style));
+  const diff = objectDiff(useEditorStore.getState().activeStyle!, squash(doc.style));
 
   const block = doc.blocks[cursor.blockI];
   const target = block.spans[cursor.spanI];
@@ -21,7 +20,8 @@ export const insertChar = commiter((id: string, cursor: ModelCursor, char: strin
     block.spans[cursor.spanI].text = modified;
   } else { // otherwise we need to make a new span
     splitSpan(doc.blocks, cursor);
-    block.spans.splice(cursor.spanI + 1, 0, { text: char, style: diff })
+    if (cursor.charI > 0) block.spans.splice(cursor.spanI + 1, 0, { text: char, style: diff });
+    else block.spans.splice(cursor.spanI, 0, { text: char, style: diff }); // block start
   }
 
   return moveCursor(id, cursor, 1);
@@ -54,7 +54,8 @@ export const deleteChar = commiter((id: string, cursor: ModelCursor) => {
     doc.blocks[cursor.blockI - 1].spans.push(...spans);
   }
 
-  return newCursor;
+  // needs normalisation to remove leftover empty spans from char deletion
+  return normaliseDocument(doc, newCursor);
 });
 
 // NOTE: will cause two distinct state operations in history
@@ -74,14 +75,15 @@ export const deleteSelection = commiter((id: string, sel: ModelSelection) => {
   const endBlock = blocks[end.blockI];
 
   const newSpans = [
-    ...startBlock.spans.slice(0, start.spanI + 1),
-    ...endBlock.spans.slice(end.spanI + 1),
+    ...startBlock.spans.slice(0, start.charI > 0 ? start.spanI + 1 : 0),
+    ...endBlock.spans.slice(end.charI > 0 ? end.spanI + 1 : 0),
   ];
 
   const newBlock = { spans: newSpans, style: startBlock.style };
   blocks.splice(start.blockI, end.blockI - start.blockI + 1, newBlock);
 
-  return normaliseCursor(blocks, start);
+  // needs normalisation to merge adjacent spans with the same style
+  return normaliseDocument(doc, start);
 });
 
 export const createBlock = commiter((id: string, cursor: ModelCursor) => {
@@ -91,18 +93,18 @@ export const createBlock = commiter((id: string, cursor: ModelCursor) => {
   splitSpan(blocks, cursor);
 
   const oldSpans = cursor.charI > 0 ? block.spans.slice(0, cursor.spanI + 1) : [];
-  const newSpans = block.spans.slice(cursor.spanI + 1);
+  const newSpans = block.spans.slice(cursor.charI > 0 ? cursor.spanI + 1 : 0);
 
   if (!newSpans.length) {
     const span = block.spans[cursor.spanI];
-    newSpans.push({ text: "", style: span.style ?? {} });
+    newSpans.push({ text: "", style: span.style ? { ...span.style } : {} });
   }
 
   // start of the block assumes document style
   if (!oldSpans.length) oldSpans.push({ text: "", style: {} });
 
   block.spans = oldSpans;
-  blocks.splice(cursor.blockI + 1, 0, { ...block, spans: newSpans });
+  blocks.splice(cursor.blockI + 1, 0, { spans: newSpans, style: { ...block.style } });
 
   return { blockI: cursor.blockI + 1, spanI: 0, charI: 0 };
 });
@@ -111,7 +113,7 @@ export const applySelectionStyle = commiter((id: string, sel: ModelSelection, st
   const doc = getComponentProp(id, `document`) as ModelDocument;
   const { blocks } = doc;
 
-  const { start, end } = isolateSelection(id, sel);
+  const { start, end } = isolateSelection(id, normaliseSelection(sel));
 
   if (style.alignment || style.lineHeight) {
     for (let i = sel.start!.blockI; i <= sel.end!.blockI; i++) {
@@ -120,12 +122,15 @@ export const applySelectionStyle = commiter((id: string, sel: ModelSelection, st
     }
   }
 
-  const rangeStart = { ...start, spanI: start.spanI + 1 };
+  const rangeStart = start.charI > 0 ? { ...start, spanI: start.spanI + 1 } : start;
   for (const span of spanRange(blocks, { start: rangeStart, end })) {
     span.style = { ...span.style, ...style };
   }
 
-  return normaliseSelection({ start, end });
+  // needs normalisation to merge adjacent spans with the same style 
+  const newEnd = normaliseDocument(doc, end); // for this specific situation the start cursor would never move
+
+  return { start, end: newEnd };
 });
 
 export function getStyleForSelection(id: string, sel: ModelSelection) {
@@ -156,7 +161,7 @@ function normaliseSelection(sel: ModelSelection) {
   return { start, end };
 }
 
-function normaliseCursor(blocks: ModelBlock[], cursor: ModelCursor) {
+export function normaliseCursor(blocks: ModelBlock[], cursor: ModelCursor) {
   // if at start of span but not the first span then move to prev span end
   if (cursor.charI === 0 && cursor.spanI > 0) {
     const prev = blocks[cursor.blockI].spans[cursor.spanI - 1];
@@ -217,8 +222,8 @@ function moveCursor(id: string, cursor: ModelCursor, amount: number) {
   return normaliseCursor(blocks, { blockI, spanI, charI });
 }
 
-function* spanRange(blocks: ModelBlock[], sel: ModelSelection) {
-  const { start, end } = normaliseSelection(sel) as { start: ModelCursor, end: ModelCursor };
+function* spanRange(blocks: ModelBlock[], sel: { start: ModelCursor, end: ModelCursor }) {
+  const { start, end } = sel;
   for (let b = start.blockI; b <= end.blockI; b++) {
     const startSpan = (b === start.blockI ? start.spanI : 0);
     const endSpan = (b === end.blockI ? end.spanI : blocks[b].spans.length - 1);
@@ -268,14 +273,17 @@ function isolateSelection(id: string, sel: ModelSelection) {
 function normaliseDocument(doc: ModelDocument, cursor: ModelCursor) {
   const newCursor = { ...cursor };
 
-  for (const block of doc.blocks) {
+  for (let i = 0; i < doc.blocks.length; i++) {
+    const block = doc.blocks[i];
+    const isCursorBlock = i === cursor.blockI;
+
     const normdSpans = [] as ModelSpan[];
     for (let s = 0; s < block.spans.length; s++) {
       const span = block.spans[s];
 
-      // remove empty spans except for ones at the end of a block
-      if (s < block.spans.length - 1 && span.text.length === 0) {
-        if (s < cursor.spanI) newCursor.spanI--;
+      // remove empty spans except for ones that are the only in a block
+      if (block.spans.length > 1 && span.text.length === 0) {
+        if (isCursorBlock && s < cursor.spanI) newCursor.spanI--;
         continue;
       };
 
@@ -283,14 +291,15 @@ function normaliseDocument(doc: ModelDocument, cursor: ModelCursor) {
       const style = objectDiff(span.style!, squash(doc.style));
       const prev = normdSpans[normdSpans.length - 1];
       if (prev && shallow(style, prev.style)) {
-        prev.text += span.text;
-        if (s <= cursor.spanI) newCursor.spanI--;
-        if (s === cursor.spanI) {
-          newCursor.charI += prev.text.length;
+        if (isCursorBlock && s <= cursor.spanI) {
+          newCursor.spanI--;
+          if (s === cursor.spanI) newCursor.charI += prev.text.length;
         }
+        prev.text += span.text;
         continue;
       }
 
+      span.style = style;
       normdSpans.push(span);
     }
 
