@@ -1,7 +1,7 @@
-import { createComponentFromBounds } from "../scene/modify";
-import useEditorStore from "../stores/editor";
-import type { Vec2 } from "../types";
-import { add, mutate, scale, subtract } from "../util";
+import { createComponentFromBounds } from "../../scene/operations/component";
+import useEditorStore from "../../stores/editor";
+import type { Vec2 } from "../../types";
+import { add, mutate, scale, subtract } from "../../util";
 
 export function handleCreateStart(_: React.MouseEvent, position: Vec2) {
     const { setSelected, setOffset, setMutationBounds } = useEditorStore.getState();

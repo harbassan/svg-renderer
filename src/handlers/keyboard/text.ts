@@ -1,8 +1,8 @@
-import { createBlock, deleteChar, deleteSelection, insertChar, insertSelection } from "../scene/text";
-import useEditorStore from "../stores/editor";
-import useVisualScene from "../stores/visual";
-import { getVisualPosition, goToLineEnd, goToLineStart, moveCursorLine, moveCursorVisual, normalizeSelectionVisual, syncModelSelection, syncVisualCursor } from "../text/cursor";
-import type { VisualBlock, VisualSelection } from "../text/types";
+import { createBlock, deleteChar, deleteSelection, insertChar, insertSelection } from "../../scene/operations/text";
+import useEditorStore from "../../stores/editor";
+import useVisualScene from "../../stores/visual";
+import { getVisualPosition, goToLineEnd, goToLineStart, moveCursorLine, moveCursorVisual, normalizeSelectionVisual, syncModelSelection, syncVisualCursor } from "../../text/cursor";
+import type { VisualBlock, VisualSelection } from "../../text/types";
 
 export function handleTextMode(e: KeyboardEvent) {
     const { selected } = useEditorStore.getState();

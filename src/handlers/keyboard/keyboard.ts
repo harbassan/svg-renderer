@@ -1,4 +1,4 @@
-import useEditorStore from "../stores/editor";
+import useEditorStore from "../../stores/editor";
 import { handleTextMode } from "./text";
 
 export function handleGlobal(e: KeyboardEvent) {

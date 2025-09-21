@@ -1,9 +1,9 @@
-import { modifyComponentBounds } from "../scene/modify";
-import useEditorStore from "../stores/editor";
-import useVisualScene from "../stores/visual";
-import { getRelativePosition, parseHit, syncModelSelection } from "../text/cursor";
-import type { Vec2 } from "../types";
-import { subtract, translate } from "../util";
+import { modifyComponentBounds } from "../../scene/operations/component";
+import useEditorStore from "../../stores/editor";
+import useVisualScene from "../../stores/visual";
+import { getRelativePosition, parseHit, syncModelSelection } from "../../text/cursor";
+import type { Vec2 } from "../../types";
+import { subtract, translate } from "../../util";
 import { handleCreateDrag, handleCreateEnd, handleCreateStart } from "./create";
 
 export function handleMouseDownGlobal(e: React.MouseEvent, position: Vec2) {

@@ -5,7 +5,7 @@ import Topbar from "./topbar/Topbar";
 import useVisualScene from "./stores/visual";
 import { buildVisualScene } from "./pipeline";
 import { getScene } from "./scene/scene";
-import { handleGlobal } from "./keyboard/keyboard";
+import { handleGlobal } from "./handlers/keyboard/keyboard";
 
 function App() {
   const setComponents = useVisualScene(state => state.setComponents);

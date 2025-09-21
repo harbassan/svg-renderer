@@ -4,7 +4,7 @@ import NumberInput from "../wrapper/NumberInput";
 import useEditorStore from "../stores/editor";
 import { useEffect, useState } from "react";
 import { getComponent } from "../scene/scene";
-import { modifyComponentProp } from "../scene/modify";
+import { modifyComponentProp } from "../scene/operations/component";
 
 interface ShapeProps {
     fill: string;

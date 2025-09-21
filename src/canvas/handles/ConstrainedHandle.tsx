@@ -2,7 +2,7 @@ import { useContext } from "react";
 import CanvasContext from "../CanvasContext";
 import type { Vec2 } from "../../types";
 import { correct, getBoxCenter, rotate } from "../../util";
-import { modifyComponentBounds } from "../../scene/modify";
+import { modifyComponentBounds } from "../../scene/operations/component";
 import useEditorStore from "../../stores/editor";
 import useVisualScene from "../../stores/visual";
 

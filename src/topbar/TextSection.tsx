@@ -6,8 +6,8 @@ import ToggleInput from "../wrapper/ToggleInput";
 import ChromePicker from "../wrapper/ChromePicker";
 import MultiInput from "../wrapper/MultiInput";
 import { useEffect } from "react";
-import { applySelectionStyle, getStyleForSelection } from "../scene/text";
-import { modifyComponentProp } from "../scene/modify";
+import { applySelectionStyle, getStyleForSelection } from "../scene/operations/text";
+import { modifyComponentProp } from "../scene/operations/component";
 import type { BaseTextStyle } from "../types";
 import { syncVisualCursor } from "../text/cursor";
 

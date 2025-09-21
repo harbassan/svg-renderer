@@ -1,11 +1,4 @@
-import { v4 } from "uuid";
-import { updateHistory } from "./history";
-import { getObject, merge } from "./util";
-import useVisualScene from "../stores/visual";
-import { buildVisualComponent } from "../pipeline";
-import type { Component } from "../types";
-
-// NOTE: *mutable* store
+import { getObject } from "./util";
 
 let scene = {
   components: {
@@ -184,30 +177,4 @@ export function getComponentProp(id: string, prop: string) {
   if (!component) return;
   const [object, key] = getObject(prop, component);
   return object[key];
-}
-
-export function addComponent(props: Record<string, any>) {
-  const component = { ...props } as Component;
-  scene.components[props.id] = component;
-  useVisualScene.getState().updateComponent(buildVisualComponent(component));
-}
-
-export function removeComponent(id: string) {
-  delete scene.components[id];
-  useVisualScene.getState().deleteComponent(id);
-}
-
-export function createComponent(props: Record<string, any>) {
-  const uuid = v4();
-  addComponent({ ...props, id: uuid });
-  updateHistory(uuid, null);
-  return uuid;
-}
-
-export function modifyComponent(id: string, props: Record<string, any>) {
-  const component = scene.components[id];
-  if (!component) return;
-  const newComponent = merge(component, props) as Component;
-  scene.components[id] = newComponent;
-  useVisualScene.getState().updateComponent(buildVisualComponent(newComponent));
 }

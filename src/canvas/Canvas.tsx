@@ -9,7 +9,7 @@ import Box from "../elements/Box";
 import Image from "../elements/Image";
 import Line from "../elements/Line";
 import useVisualScene from "../stores/visual";
-import { handleMouseDownGlobal, handleMouseMoveGlobal, handleMouseUpGlobal } from "../pointer/pointer";
+import { handleMouseDownGlobal, handleMouseMoveGlobal, handleMouseUpGlobal } from "../handlers/pointer/pointer";
 
 const componentMap: Record<string, React.FC<any>> = {
   textbox: TextBox,

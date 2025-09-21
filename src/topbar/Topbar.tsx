@@ -10,17 +10,18 @@ import {
   Undo,
   VectorSquare,
 } from "lucide-react";
-import { getComponent, removeComponent } from "../scene/scene";
+import { getComponent } from "../scene/scene";
 import { useEffect } from "react";
 import { redo, undo } from "../scene/history";
 import {
   modifyComponentProp,
   parseComponent,
   stringifyComponent,
-} from "../scene/modify";
+} from "../scene/operations/component";
 import useEditorStore from "../stores/editor";
 import ShapeSection from "./ShapeSection";
 import TextSection from "./TextSection";
+import { remove } from "../scene/operations/modifiers";
 
 function Topbar() {
   const selected = useEditorStore(state => state.selected);
@@ -40,7 +41,7 @@ function Topbar() {
 
     function onCut(e: ClipboardEvent) {
       onCopy(e);
-      remove();
+      removeComponent();
     }
 
     document.addEventListener("copy", onCopy);
@@ -62,9 +63,9 @@ function Topbar() {
     return () => document.removeEventListener("paste", onPaste);
   }, []);
 
-  function remove() {
+  function removeComponent() {
     if (!selected) return;
-    removeComponent(selected);
+    remove(selected);
     setSelected("");
   }
 
@@ -112,7 +113,7 @@ function Topbar() {
             |
 
             {/* remove/reorder */}
-            <button className="button" onClick={remove}>
+            <button className="button" onClick={removeComponent}>
               <Trash2 size={16} />
             </button>
             <button

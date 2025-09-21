@@ -1,13 +1,13 @@
-import { commiter } from "./modify";
-import { getComponentProp } from "./scene";
-import type { ModelCursor, ModelSelection } from "../text/types";
-import type { BaseTextStyle, ModelBlock, ModelDocument, ModelSpan } from "../types";
-import { squash } from "../text/build";
-import useEditorStore from "../stores/editor";
-import { objectDiff } from "../util";
+import { getComponentProp } from "../scene";
+import type { ModelCursor, ModelSelection } from "../../text/types";
+import type { BaseTextStyle, ModelBlock, ModelDocument, ModelSpan } from "../../types";
+import { squash } from "../../text/build";
+import useEditorStore from "../../stores/editor";
+import { objectDiff } from "../../util";
 import { shallow } from "zustand/shallow";
+import { modify } from "./modifiers";
 
-export const insertChar = commiter((id: string, cursor: ModelCursor, char: string) => {
+export const insertChar = modify((id: string, cursor: ModelCursor, char: string) => {
   const doc = getComponentProp(id, "document") as ModelDocument;
 
   const diff = objectDiff(useEditorStore.getState().activeStyle!, squash(doc.style));
@@ -27,7 +27,7 @@ export const insertChar = commiter((id: string, cursor: ModelCursor, char: strin
   return moveCursor(id, cursor, 1);
 });
 
-export const deleteChar = commiter((id: string, cursor: ModelCursor) => {
+export const deleteChar = modify((id: string, cursor: ModelCursor) => {
   if (!cursor.blockI && !cursor.spanI && !cursor.charI) return cursor; // start of text
 
   const newCursor = moveCursor(id, cursor, -1);
@@ -64,7 +64,7 @@ export function insertSelection(id: string, sel: ModelSelection, char: string) {
   return insertChar(id, cursor, char);
 }
 
-export const deleteSelection = commiter((id: string, sel: ModelSelection) => {
+export const deleteSelection = modify((id: string, sel: ModelSelection) => {
   const doc = getComponentProp(id, `document`) as ModelDocument;
   const { blocks } = doc;
 
@@ -86,7 +86,7 @@ export const deleteSelection = commiter((id: string, sel: ModelSelection) => {
   return normaliseDocument(doc, start);
 });
 
-export const createBlock = commiter((id: string, cursor: ModelCursor) => {
+export const createBlock = modify((id: string, cursor: ModelCursor) => {
   const blocks = getComponentProp(id, `document.blocks`) as ModelBlock[];
   const block = blocks[cursor.blockI];
 
@@ -109,7 +109,7 @@ export const createBlock = commiter((id: string, cursor: ModelCursor) => {
   return { blockI: cursor.blockI + 1, spanI: 0, charI: 0 };
 });
 
-export const applySelectionStyle = commiter((id: string, sel: ModelSelection, style: Partial<BaseTextStyle>) => {
+export const applySelectionStyle = modify((id: string, sel: ModelSelection, style: Partial<BaseTextStyle>) => {
   const doc = getComponentProp(id, `document`) as ModelDocument;
   const { blocks } = doc;
 
