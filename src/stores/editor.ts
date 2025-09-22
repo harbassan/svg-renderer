@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { ModelSelection, VisualSelection } from "../text/types";
 import type { BaseTextStyle, Bounds, Vec2 } from "../types";
 
-type Mode = "normal" | "create" | "text" | "mutation";
+type Mode = "normal" | "resize" | "create" | "text" | "mutation";
 
 interface EditorState {
     selected: string | null;

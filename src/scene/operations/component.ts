@@ -1,24 +1,81 @@
 import type { Bounds, Component } from "../../types";
 import { getComponent, getComponentProp, getScene } from "../scene";
-import { translate } from "../../util";
+import { mutate, subtract, translate } from "../../util";
 import { getObject, merge } from "../util";
 import { add, modify } from "./modifiers";
 
 const defaults = {
   textbox: {
+    type: "textbox",
     padding: 20,
-    fill: "#ffffff00",
+    fill: "#00000000",
+    bounds: {
+      verts: [
+        { x: 0, y: 0 },
+        { x: 400, y: 100 }
+      ],
+      rotation: 0
+    },
     document: {
-      style: { textColor: "#ffffff" },
+      style: {},
       blocks: [
         {
-          spans: [{ text: "Nullum bonum textum substitutivum cogitare potui" }],
+          style: {},
+          spans: [
+            {
+              style: {},
+              text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla venenatis."
+            }
+          ],
         },
       ],
     },
   },
-  line: { stroke: "#ffffff", strokeWidth: 2 },
-  default: { fill: "#ffffff" },
+  line: {
+    type: "line",
+    stroke: "#b7b7b7ff",
+    strokeWidth: 5,
+    bounds: {
+      verts: [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 }
+      ],
+    }
+  },
+  speech: {
+    type: "speech",
+    fill: "#b7b7b7ff",
+    bounds: {
+      verts: [
+        { x: 0, y: 0 },
+        { x: 400, y: 100 },
+        { x: 400, y: 120 }
+      ],
+      rotation: 0,
+    }
+  },
+  box: {
+    type: "box",
+    fill: "#b7b7b7ff",
+    bounds: {
+      verts: [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 }
+      ],
+      rotation: 0,
+    }
+  },
+  ellipse: {
+    type: "ellipse",
+    fill: "#b7b7b7ff",
+    bounds: {
+      verts: [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 }
+      ],
+      rotation: 0,
+    }
+  },
 };
 
 export function stringifyComponent(id: string) {
@@ -40,12 +97,11 @@ export function duplicateComponent(id: string) {
   return parseComponent(newComponent);
 }
 
-export function createComponentFromBounds(type: string, bounds: Bounds) {
-  let props = { type, bounds };
-  if (type === "textbox") props = { ...props, ...defaults.textbox };
-  else if (type === "line") props = { ...props, ...defaults.line };
-  else props = { ...props, ...defaults.default };
-  return add(props);
+export function createComponentFromBounds(type: keyof typeof defaults, bounds: Bounds) {
+  const component = structuredClone(defaults[type]);
+  const dims = mutate(subtract(bounds.verts[1], bounds.verts[0]), Math.abs);
+  if (dims.x > 50 && dims.y > 50) component.bounds = bounds;
+  return add(component);
 }
 
 export const modifyComponentProp = modify((id: string, prop: string, val: any) => {

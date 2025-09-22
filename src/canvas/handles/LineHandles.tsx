@@ -1,16 +1,10 @@
-import ArbitraryHandle from "./ArbitraryHandle";
+import ResizeHandle from "./ConstrainedHandle";
 
 function LineHandles() {
   return (
     <>
-      <ArbitraryHandle
-        x={0}
-        y={0}
-      />
-      <ArbitraryHandle
-        x={1}
-        y={1}
-      />
+      <ResizeHandle x={0} y={0} />
+      <ResizeHandle x={1} y={1} />
     </>
   );
 };

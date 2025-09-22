@@ -5,16 +5,19 @@ import { getRelativePosition, parseHit, syncModelSelection } from "../../text/cu
 import type { Vec2 } from "../../types";
 import { subtract, translate } from "../../util";
 import { handleCreateDrag, handleCreateEnd, handleCreateStart } from "./create";
+import { handleResizeDrag, handleResizeStart } from "./resize";
 
 export function handleMouseDownGlobal(e: React.MouseEvent, position: Vec2) {
     const target = e.target as HTMLElement;
 
     const { mode, setVisualSelection } = useEditorStore.getState();
 
-    if (target.dataset.type === "document") {
-        handleDocumentClick(e, position);
-    } else if (mode.includes("create")) {
+    if (mode.includes("create")) {
         handleCreateStart(e, position);
+    } else if (target.dataset.handle) {
+        handleResizeStart(e);
+    } else if (target.dataset.type === "document") {
+        handleDocumentClick(e, position);
     } else if (target.dataset.id) {
         handleComponentClick(e, position);
     } else {
@@ -34,7 +37,9 @@ export function handleMouseMoveGlobal(e: React.MouseEvent, position: Vec2) {
 
     if (!mouseDown) return;
 
-    if (mode.includes("text")) {
+    if (mode.includes("resize")) {
+        handleResizeDrag(e, position);
+    } else if (mode.includes("text")) {
         handleTextSelection(e, position);
     } else if (mode.includes("create")) {
         handleCreateDrag(e, position);
@@ -93,7 +98,7 @@ function handleComponentDrag(_: React.MouseEvent, position: Vec2) {
 
 function handleMutationEnd() {
     const { selected, mutationBounds, setMode } = useEditorStore.getState();
-    modifyComponentBounds(selected!, { verts: mutationBounds.verts });
+    modifyComponentBounds(selected!, mutationBounds);
     setMode(["normal"]);
 }
 

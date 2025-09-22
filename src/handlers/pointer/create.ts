@@ -8,7 +8,7 @@ export function handleCreateStart(_: React.MouseEvent, position: Vec2) {
 
     setSelected(null);
     setOffset(position);
-    setMutationBounds({ verts: [], rotation: 0 });
+    setMutationBounds({ verts: [position, position], rotation: 0 });
 }
 
 function getTailVert(verts: Vec2[]) {
