@@ -1,5 +1,5 @@
 import type { Bounds, Component } from "../../types";
-import { getComponent } from "../scene";
+import { getComponent, getComponentProp, getScene } from "../scene";
 import { translate } from "../../util";
 import { getObject, merge } from "../util";
 import { add, modify } from "./modifiers";
@@ -27,12 +27,17 @@ export function stringifyComponent(id: string) {
   return JSON.stringify(component);
 }
 
-export function parseComponent(component: string) {
-  const newComponent = JSON.parse(component) as Component;
+export function parseComponent(component: Component) {
   const offset = { x: 10, y: 10 };
-  newComponent.bounds.verts = translate(newComponent.bounds.verts, offset);
-  newComponent.zIndex += 1;
-  return add(newComponent);
+  component.bounds.verts = translate(component.bounds.verts, offset);
+  component.zIndex += 1;
+  delete (component as Record<string, any>).id;
+  return add(component);
+}
+
+export function duplicateComponent(id: string) {
+  const newComponent = structuredClone(getComponent(id));
+  return parseComponent(newComponent);
 }
 
 export function createComponentFromBounds(type: string, bounds: Bounds) {
@@ -56,4 +61,26 @@ export const modifyComponentProp = modify((id: string, prop: string, val: any) =
 
 export function modifyComponentBounds(id: string, bounds: Partial<Bounds>) {
   modifyComponentProp(id, "bounds", bounds);
+}
+
+export function bringForward(id: string) {
+  modifyComponentProp(id, "zIndex", (val: number) => val + 1)
+}
+
+export function sendBackward(id: string) {
+  modifyComponentProp(id, "zIndex", (val: number) => val - 1)
+}
+
+export function bringToFront(id: string) {
+  const components = Object.values(getScene().components) as Component[];
+  const max = components.reduce((p, c) => c.zIndex > p ? c.zIndex : p, -Infinity);
+  if (getComponentProp(id, "zIndex") === max) return;
+  modifyComponentProp(id, "zIndex", max + 1);
+}
+
+export function sendToBack(id: string) {
+  const components = Object.values(getScene().components) as Component[];
+  const min = components.reduce((p, c) => c.zIndex < p ? c.zIndex : p, Infinity);
+  if (getComponentProp(id, "zIndex") === min) return;
+  modifyComponentProp(id, "zIndex", min - 1);
 }

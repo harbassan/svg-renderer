@@ -10,17 +10,12 @@ import {
   Undo,
   VectorSquare,
 } from "lucide-react";
-import { getComponent } from "../scene/scene";
-import { useEffect } from "react";
-import { redo, undo } from "../scene/history";
-import {
-  modifyComponentProp,
-  parseComponent,
-  stringifyComponent,
-} from "../scene/operations/component";
-import useEditorStore from "../stores/editor";
 import ShapeSection from "./ShapeSection";
 import TextSection from "./TextSection";
+import useEditorStore from "../stores/editor";
+import { getComponent } from "../scene/scene";
+import { redo, undo } from "../scene/history";
+import { bringToFront, sendToBack } from "../scene/operations/component";
 import { remove } from "../scene/operations/modifiers";
 
 function Topbar() {
@@ -28,40 +23,6 @@ function Topbar() {
   const setSelected = useEditorStore(state => state.setSelected);
   const setMode = useEditorStore(state => state.setMode);
   const setCreateType = useEditorStore(state => state.setCreateType);
-
-  useEffect(() => {
-    function onCopy(e: ClipboardEvent) {
-      if (!selected) return;
-      e.preventDefault();
-      e.clipboardData!.setData(
-        "application/renderer",
-        stringifyComponent(selected) || "",
-      );
-    }
-
-    function onCut(e: ClipboardEvent) {
-      onCopy(e);
-      removeComponent();
-    }
-
-    document.addEventListener("copy", onCopy);
-    document.addEventListener("cut", onCut);
-
-    return () => {
-      document.removeEventListener("copy", onCopy);
-      document.removeEventListener("cut", onCut);
-    };
-  }, [selected]);
-
-  useEffect(() => {
-    function onPaste(e: ClipboardEvent) {
-      e.preventDefault();
-      const raw = e.clipboardData!.getData("application/renderer");
-      if (raw) setSelected(parseComponent(raw));
-    }
-    document.addEventListener("paste", onPaste);
-    return () => document.removeEventListener("paste", onPaste);
-  }, []);
 
   function removeComponent() {
     if (!selected) return;
@@ -118,25 +79,13 @@ function Topbar() {
             </button>
             <button
               className="button"
-              onClick={() =>
-                modifyComponentProp(
-                  selected,
-                  "zIndex",
-                  (val: number) => val + 1,
-                )
-              }
+              onClick={() => bringToFront(selected)}
             >
               <BringToFront size={16} />
             </button>
             <button
               className="button"
-              onClick={() =>
-                modifyComponentProp(
-                  selected,
-                  "zIndex",
-                  (val: number) => val - 1,
-                )
-              }
+              onClick={() => sendToBack(selected)}
             >
               <SendToBack size={16} />
             </button>

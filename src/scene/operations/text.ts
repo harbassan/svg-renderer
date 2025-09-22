@@ -123,7 +123,7 @@ export const applySelectionStyle = modify((id: string, sel: ModelSelection, styl
   }
 
   const rangeStart = start.charI > 0 ? { ...start, spanI: start.spanI + 1 } : start;
-  for (const span of spanRange(blocks, { start: rangeStart, end })) {
+  for (const { span } of spanRange(blocks, { start: rangeStart, end })) {
     span.style = { ...span.style, ...style };
   }
 
@@ -229,7 +229,7 @@ function* spanRange(blocks: ModelBlock[], sel: { start: ModelCursor, end: ModelC
     const endSpan = (b === end.blockI ? end.spanI : blocks[b].spans.length - 1);
 
     for (let s = startSpan; s <= endSpan; s++) {
-      yield blocks[b].spans[s];
+      yield { b, s, span: blocks[b].spans[s] };
     }
   }
 }
@@ -308,3 +308,116 @@ function normaliseDocument(doc: ModelDocument, cursor: ModelCursor) {
 
   return newCursor;
 }
+
+export function getDocumentText(id: string) {
+  const blocks = getComponentProp(id, "document.blocks");
+
+  let text = "";
+  for (const block of blocks) {
+    for (const span of block.spans) {
+      text += span.text;
+    }
+    text += "\n";
+  }
+  return text;
+}
+
+export function getSelectionContent(id: string, sel: ModelSelection) {
+  const doc = getComponentProp(id, "document");
+  const { blocks } = doc;
+  const { start, end } = normaliseSelection(sel) as { start: ModelCursor, end: ModelCursor };
+
+  // if the selection is single span
+  if (start.blockI === end.blockI && start.spanI === end.spanI) {
+    const block = blocks[start.blockI];
+    const span = block.spans[start.spanI];
+    const text = span.text.slice(start.charI, end.charI);
+    const newDoc = { ...doc, blocks: [{ ...block, spans: [{ ...span, text }] }] };
+    return { text, doc: newDoc };
+  }
+
+  let text = "";
+  const newDoc = { ...doc, blocks: [] };
+
+  for (let b = start.blockI; b <= end.blockI; b++) {
+    const startSpan = (b === start.blockI ? start.spanI : 0);
+    const endSpan = (b === end.blockI ? end.spanI : blocks[b].spans.length - 1);
+
+    const nb = b - start.blockI;
+    const block = blocks[b];
+    newDoc.blocks.push({ ...block, spans: [] });
+
+    for (let s = startSpan; s <= endSpan; s++) {
+      const span = blocks[b].spans[s];
+
+      if (b === start.blockI && s === start.spanI) {
+        const content = span.text.slice(start.charI);
+        text += content;
+        newDoc.blocks[nb].spans.push({ ...span, text: content });
+      } else if (b === end.blockI && s === end.spanI) {
+        const content = span.text.slice(0, end.charI);
+        text += content;
+        newDoc.blocks[nb].spans.push({ ...span, text: content });
+      } else {
+        text += span.text;
+        newDoc.blocks[nb].spans.push({ ...span });
+      }
+    }
+
+    text += "\n";
+  }
+
+  return { text, doc: newDoc };
+}
+
+function squashSpanStyles(doc: ModelDocument) {
+  doc.blocks.forEach(b => {
+    b.spans.forEach(s => {
+      s.style = { ...doc.style, ...s.style };
+    })
+  });
+}
+
+function getExtremeCursor(doc: ModelDocument) {
+  const blockI = doc.blocks.length - 1;
+  const block = doc.blocks[blockI];
+  const spanI = block.spans.length - 1;
+  const span = block.spans[spanI];
+  const charI = span.text.length;
+
+  return { blockI, spanI, charI };
+}
+
+export const mergeDocs = modify((id: string, cursor: ModelCursor, doc: ModelDocument) => {
+  const original = getComponentProp(id, "document") as ModelDocument;
+  squashSpanStyles(doc);
+
+  const extreme = getExtremeCursor(doc);
+
+  if (doc.blocks.length === 1) {
+    splitSpan(original.blocks, cursor);
+    const block = original.blocks[cursor.blockI];
+    const spans = doc.blocks[0].spans;
+    block.spans.splice(cursor.charI > 0 ? cursor.spanI + 1 : 0, 0, ...spans);
+
+    const spanI = (cursor.charI > 0 ? cursor.spanI + 1 : 0) + extreme.spanI;
+    return { blockI: cursor.blockI, spanI, charI: extreme.charI };
+  } else {
+    splitSpan(original.blocks, cursor);
+    const block = original.blocks[cursor.blockI];
+    const spans = doc.blocks[0].spans;
+    const lhs = block.spans.slice(0, cursor.charI > 0 ? cursor.spanI + 1 : 0);
+    const rhs = block.spans.slice(cursor.charI > 0 ? cursor.spanI + 1 : 0);
+    block.spans = [...lhs, ...spans];
+
+    const intermediates = doc.blocks.slice(1, doc.blocks.length - 1);
+    original.blocks.splice(cursor.blockI + 1, 0, ...intermediates);
+
+    const finalBlock = doc.blocks[doc.blocks.length - 1];
+    const newBlock = { ...block, spans: [...finalBlock.spans, ...rhs] }
+    original.blocks.splice(cursor.blockI + doc.blocks.length - 1, 0, newBlock);
+
+    const blockI = cursor.blockI + extreme.blockI;
+    return { blockI, spanI: extreme.spanI, charI: extreme.charI };
+  }
+});
