@@ -4,7 +4,7 @@ import { mutate, subtract, translate } from "../../util";
 import { getObject, merge } from "../util";
 import { add, modify } from "./modifiers";
 
-const defaults = {
+export const defaults = {
   textbox: {
     type: "textbox",
     padding: 20,

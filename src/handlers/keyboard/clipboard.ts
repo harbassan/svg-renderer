@@ -1,5 +1,5 @@
-import { parseComponent, stringifyComponent } from "../../scene/operations/component";
-import { remove } from "../../scene/operations/modifiers";
+import { defaults, parseComponent, stringifyComponent } from "../../scene/operations/component";
+import { add, remove } from "../../scene/operations/modifiers";
 import { getDocumentText, getSelectionContent, mergeDocs } from "../../scene/operations/text";
 import { getComponent } from "../../scene/scene";
 import useEditorStore from "../../stores/editor";
@@ -54,11 +54,18 @@ export function paste(e: ClipboardEvent) {
     } else {
         if (app) {
             const obj = JSON.parse(app);
-            if (obj.type) parseComponent(obj);
-            else { } // paste in doc with default textbox
+            if (obj.type) {
+                setSelected(parseComponent(obj));
+            } else {
+                const component = structuredClone(defaults["textbox"]);
+                component.document = structuredClone(obj);
+                setSelected(add(component));
+            }
         } else if (text) {
-            // const doc = plainToDoc(text);
-            // paste in doc with default textbox
+            const doc = plainToDoc(text);
+            const component = structuredClone(defaults["textbox"]);
+            component.document = structuredClone(doc);
+            setSelected(add(component));
         }
     }
 }
