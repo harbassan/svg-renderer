@@ -105,7 +105,8 @@ function handleMutationEnd() {
 // document handlers
 
 function handleDocumentClick(e: React.MouseEvent, position: Vec2) {
-    const { setSelected, setMode, setVisualSelection, setDesiredColumn } = useEditorStore.getState();
+    const { setSelected, setMode, setMutationBounds, setVisualSelection, setDesiredColumn } = useEditorStore.getState();
+    const scene = useVisualScene.getState().components;
 
     const target = e.target as HTMLElement;
     const { document: doc } = useVisualScene.getState().components[target.dataset.id as string];
@@ -113,6 +114,9 @@ function handleDocumentClick(e: React.MouseEvent, position: Vec2) {
 
     setSelected(target.dataset.id as string);
     setMode(["text"]);
+
+    const component = scene[target.dataset.id as string];
+    setMutationBounds({ ...component.bounds })
 
     setDesiredColumn(null);
     setVisualSelection({ start: cursor, end: null });
