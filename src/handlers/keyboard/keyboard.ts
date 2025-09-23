@@ -1,7 +1,9 @@
 import { redo, undo } from "../../scene/history";
-import { bringForward, bringToFront, duplicateComponent, sendBackward, sendToBack } from "../../scene/operations/component";
+import { bringForward, bringToFront, duplicateComponent, modifyComponentProp, sendBackward, sendToBack } from "../../scene/operations/component";
 import { remove } from "../../scene/operations/modifiers";
 import useEditorStore from "../../stores/editor";
+import type { Vec2 } from "../../types";
+import { add, addScalar, translate } from "../../util";
 import { handleTextMode } from "./text";
 
 export function handleGlobal(e: KeyboardEvent) {
@@ -42,5 +44,13 @@ function handleComponentOperations(e: KeyboardEvent, selected: string) {
     if (e.key === "Backspace") {
         remove(selected);
         setSelected(null);
+    } else if (e.key === "ArrowUp") {
+        modifyComponentProp(selected, "bounds.verts", (prev: Vec2[]) => translate(prev, { x: 0, y: -5 }));
+    } else if (e.key === "ArrowDown") {
+        modifyComponentProp(selected, "bounds.verts", (prev: Vec2[]) => translate(prev, { x: 0, y: 5 }));
+    } else if (e.key === "ArrowLeft") {
+        modifyComponentProp(selected, "bounds.verts", (prev: Vec2[]) => translate(prev, { x: -5, y: 0 }));
+    } else if (e.key === "ArrowRight") {
+        modifyComponentProp(selected, "bounds.verts", (prev: Vec2[]) => translate(prev, { x: 5, y: 0 }));
     }
 }

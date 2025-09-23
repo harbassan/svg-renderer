@@ -1,7 +1,7 @@
 import { getComponent, getComponentProp } from "../../scene/scene";
 import useEditorStore from "../../stores/editor";
 import type { Bounds, Vec2 } from "../../types";
-import { add, clamp, correct, deg, divide, getBoxCenter, multiply, rotate, subtract } from "../../util";
+import { add, clamp, correct, deg, divide, getBoxCenter, multiply, rotate, scale, subtract } from "../../util";
 
 type HandleType = "size" | "rotation";
 
@@ -18,7 +18,7 @@ export function handleResizeStart(e: React.MouseEvent) {
     setMode(["resize"]);
 }
 
-export function handleResizeDrag(_: React.MouseEvent, position: Vec2) {
+export function handleResizeDrag(e: React.MouseEvent, position: Vec2) {
     const { addMode, setMutationBounds, selected } = useEditorStore.getState();
     addMode("mutation");
 
@@ -28,17 +28,18 @@ export function handleResizeDrag(_: React.MouseEvent, position: Vec2) {
 
     if (type === "size") {
         const relative = rotate(position, getBoxCenter(bounds.verts), -bounds.rotation);
-        newBounds.verts = updateResize(relative, coords);
+        newBounds.verts = updateResize(relative, coords, e.ctrlKey, e.shiftKey);
     } else if (type === "rotation") {
-        newBounds.rotation = getRotation(position, getBoxCenter(bounds.verts));
+        newBounds.rotation = getRotation(position, getBoxCenter(bounds.verts), e.shiftKey);
     }
 
     setMutationBounds((prev) => ({ ...prev, ...newBounds }));
 }
 
-function getRotation(v: Vec2, origin: Vec2) {
+function getRotation(v: Vec2, origin: Vec2, snap: boolean) {
     const relative = subtract(v, origin);
-    return deg(Math.atan2(relative.x, -relative.y));
+    const angle = deg(Math.atan2(relative.x, -relative.y));
+    return snap ? Math.round(angle / 15) * 15 : angle;
 }
 
 // NOTE: potentially overcomplicated implementation
@@ -65,21 +66,68 @@ function getNewTail(verts: Vec2[], newVerts: Vec2[], coords: number[]) {
     return add(verts[2], multiply(diff, scale));
 }
 
-function updateResize(position: Vec2, coords: number[]) {
-    const { selected } = useEditorStore.getState();
-    const { bounds, type } = getComponent(selected!);
-    const verts = modifyVerts(bounds.verts, coords[0], coords[1], position);
+function lockAspect(verts: Vec2[], newVerts: Vec2[], coords: number[]) {
+    const inversePoint = { x: verts[1 - coords[0]].x, y: verts[1 - coords[1]].y };
+    const newPoint = { x: newVerts[coords[0]].x, y: newVerts[coords[1]].y };
 
-    if (type === "speech" && !coords.includes(2)) {
-        verts[2] = getNewTail(bounds.verts, verts, coords);
+    const { x: dx, y: dy } = subtract(newPoint, inversePoint);
+    const aspect = getAspect(verts);
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        newVerts[coords[1]].y = inversePoint.y + Math.sign(dy) * (Math.abs(dx) / aspect);
+    } else {
+        newVerts[coords[0]].x = inversePoint.x + Math.sign(dx) * (Math.abs(dy) * aspect);
     }
-
-    return correct(verts, getBoxCenter(bounds.verts), bounds.rotation);
 }
 
-function modifyVerts(verts: Vec2[], x: number, y: number, v: Vec2) {
+function getAspect(verts: Vec2[]) {
+    const width = Math.abs(verts[1].x - verts[0].x);
+    const height = Math.abs(verts[1].y - verts[0].y);
+    return width / height;
+}
+
+function inverse(coords: number[]) {
+    return [1 - coords[0], 1 - coords[1]];
+}
+
+function updateResize(position: Vec2, coords: number[], anchorCenter: boolean, fixed: boolean) {
+    const { selected } = useEditorStore.getState();
+    const { bounds, type } = getComponent(selected!);
+    const center = getBoxCenter(bounds.verts);
+
+    let verts = modifyVerts(bounds.verts, coords, position);
+
+    if (!coords.includes(2)) { // none of these apply to the speech triangle
+        // shift modifier
+        if (fixed && !coords.includes(0.5)) {
+            lockAspect(bounds.verts, verts, coords);
+        }
+
+        if (type === "speech") {
+            verts[2] = getNewTail(bounds.verts, verts, coords);
+        }
+
+        // alt modifier
+        if (anchorCenter) {
+            const mirrored = mirror(verts, center, coords);
+            if (type === "speech") {
+                mirrored[2] = getNewTail(verts, mirrored, inverse(coords));
+            }
+            verts = mirrored;
+        }
+    }
+
+    return correct(verts, center, bounds.rotation);
+}
+
+function mirror(verts: Vec2[], center: Vec2, coords: number[]) {
+    const point = { x: verts[coords[0]].x, y: verts[coords[1]].y };
+    const inversePosition = add(scale(subtract(point, center), -1), center);
+    return modifyVerts(verts, inverse(coords), inversePosition);
+}
+
+function modifyVerts(verts: Vec2[], coords: number[], v: Vec2) {
     const newVerts = verts.map((v) => ({ ...v }));
-    if (y !== 0.5) newVerts[y].y = v.y;
-    if (x !== 0.5) newVerts[x].x = v.x;
+    if (coords[1] !== 0.5) newVerts[coords[1]].y = v.y;
+    if (coords[0] !== 0.5) newVerts[coords[0]].x = v.x;
     return newVerts;
 }

@@ -7,7 +7,7 @@ function DragHandles() {
       <ResizeHandle x={0} y={0} />
       <ResizeHandle x={1} y={0} />
       <ResizeHandle x={1} y={1} />
-      <ResizeHandle x={0} y={0} />
+      <ResizeHandle x={0} y={1} />
       <ResizeHandle x={0.5} y={0} />
       <ResizeHandle x={0.5} y={1} />
       <ResizeHandle x={0} y={0.5} />
