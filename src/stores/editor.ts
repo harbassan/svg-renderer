@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { ModelSelection, VisualSelection } from "../text/types";
 import type { BaseTextStyle, Bounds, Vec2 } from "../types";
+import { getComponent } from "../scene/scene";
+import { getStyleForSelection } from "../scene/operations/text";
 
 type Mode = "normal" | "resize" | "create" | "text" | "mutation";
 
@@ -63,7 +65,13 @@ const useEditorStore = create<EditorState>()((set) => ({
     activeStyle: null,
     desiredColumn: null,
 
-    setSelection: (selection) => set({ selection }),
+    setSelection: (selection) => set(({ selected }) => {
+        if (selected && getComponent(selected).type === "textbox") {
+            const activeStyle = getStyleForSelection(selected, selection);
+            return { selection, activeStyle };
+        }
+        return { selection }
+    }),
     setVisualSelection: setter(set, "visualSelection"),
     setActiveStyle: (style: BaseTextStyle) => set({ activeStyle: style }),
     setDesiredColumn: (column) => set({ desiredColumn: column }),

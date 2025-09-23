@@ -84,6 +84,7 @@ function Highlight({ blocks, bounds, color }: HighlightProps) {
 
         highlights.push(
           <path
+            key={[i, j, k].join("|")}
             d={expandToPath({
               x: x + line.x + bounds.x,
               y,

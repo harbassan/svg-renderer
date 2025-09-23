@@ -12,18 +12,20 @@ interface ShapeProps {
     strokeWidth: number;
 }
 
-function ShapeSection() {
-    const selected = useEditorStore(state => state.selected);
+function extractProps(selected: string): ShapeProps {
+    const { fill, stroke, strokeWidth } = getComponent(selected);
+    return { fill, stroke, strokeWidth };
+}
 
-    const [props, setProps] = useState({} as ShapeProps);
+function ShapeSection() {
+    const selected = useEditorStore(state => state.selected)!;
+
+    const [props, setProps] = useState(extractProps(selected));
 
     useEffect(() => {
-        if (!selected) return;
-        const { fill, stroke, strokeWidth } = getComponent(selected);
-        setProps({ fill, stroke, strokeWidth });
+        setProps(extractProps(selected));
     }, [selected]);
 
-    if (!selected) return null;
 
     function modifyProps(prop: string, value: string | number) {
         modifyComponentProp(selected!, `${prop}`, value);

@@ -13,7 +13,7 @@ function MultiInput({
   return (
     <>
       {options.map((option, i) => (
-        <button
+        <button key={i}
           className={`button ${value === option && "active"}`}
           onClick={() => onChange(option)}
         >

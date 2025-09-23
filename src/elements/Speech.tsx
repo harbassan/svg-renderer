@@ -4,6 +4,7 @@ import {
   constructPartialPath,
   divide,
   expandBoxVerts,
+  filterComponent,
   getBoxCenter,
   multiply,
   mutate,
@@ -11,7 +12,7 @@ import {
   scale,
   subtract,
 } from "../util";
-import type { SpeechComponent, Vec2 } from "../types";
+import type { Component, SpeechComponent, Vec2 } from "../types";
 
 interface Segment {
   grid: Vec2;
@@ -115,9 +116,10 @@ function Speech(component: SpeechComponent) {
 
   return (
     <g>
-      <path d={constructPath()} {...component} data-id={component.id} />
+      <path d={constructPath()} {...filterComponent(component)} />
     </g>
   );
 }
+
 
 export default Speech;

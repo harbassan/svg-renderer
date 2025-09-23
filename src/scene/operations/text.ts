@@ -137,7 +137,7 @@ export function getStyleForSelection(id: string, sel: ModelSelection) {
   const doc = getComponentProp(id, "document");
   const { start, end } = sel;
 
-  if (start == null) return doc.style; // no selection
+  if (start == null) return squash(doc.style); // no selection
 
   if (end) { // full sel
     // TODO: choose the least specificity present across selected spans (prefer false for toggles, unknown for values)

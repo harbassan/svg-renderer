@@ -34,6 +34,7 @@ let scene = {
     "123122": {
       id: "123122",
       type: "ellipse",
+      strokeWidth: 0,
       bounds: {
         verts: [
           { x: 600, y: 400 },

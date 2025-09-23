@@ -1,6 +1,7 @@
 import {
   constructPath,
   expandBoxVerts,
+  filterComponent,
   getBoxCenter,
   rotateMany,
 } from "../util";
@@ -16,7 +17,7 @@ function Box(component: BoxComponent) {
   );
   const path = constructPath(verts);
 
-  return <path d={path} {...component} data-id={component.id} />;
+  return <path d={path} {...filterComponent(component)} />;
 }
 
 export default Box;

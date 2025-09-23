@@ -1,4 +1,4 @@
-import { constructPath } from "../util";
+import { constructPath, filterComponent } from "../util";
 import type { LineComponent } from "../types";
 
 function Line(component: LineComponent) {
@@ -6,7 +6,7 @@ function Line(component: LineComponent) {
 
   const path = constructPath(bounds.verts);
 
-  return <path d={path} {...component} data-id={component.id} />;
+  return <path d={path} {...filterComponent(component)} />;
 }
 
 export default Line;

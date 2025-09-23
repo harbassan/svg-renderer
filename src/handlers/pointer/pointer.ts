@@ -10,7 +10,7 @@ import { handleResizeDrag, handleResizeStart } from "./resize";
 export function handleMouseDownGlobal(e: React.MouseEvent, position: Vec2) {
     const target = e.target as HTMLElement;
 
-    const { mode, setVisualSelection } = useEditorStore.getState();
+    const { mode, setVisualSelection, setSelection } = useEditorStore.getState();
 
     if (mode.includes("create")) {
         handleCreateStart(e, position);
@@ -26,7 +26,7 @@ export function handleMouseDownGlobal(e: React.MouseEvent, position: Vec2) {
 
     if (target.dataset.type !== "document") {
         setVisualSelection({ start: null, end: null });
-        syncModelSelection();
+        setSelection({ start: null, end: null });
     }
 
     useEditorStore.getState().setMouseDown(true);

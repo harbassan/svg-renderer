@@ -1,4 +1,4 @@
-import type { RelativeBounds, Vec2 } from "./types";
+import type { Component, RelativeBounds, Vec2 } from "./types";
 
 type Degree = number;
 type Radian = number;
@@ -148,4 +148,10 @@ export function objectDiff(a: Record<any, any>, b: Record<any, any>) {
     }
   }
   return diff;
+}
+
+export function filterComponent(component: Component) {
+  const filtered = { ...component, bounds: undefined, document: undefined, "data-id": component.id } as Record<string, any>;
+  delete filtered.zIndex; // we have to explicitly delete this one or we get a warning
+  return filtered;
 }

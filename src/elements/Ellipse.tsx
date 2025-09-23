@@ -1,5 +1,5 @@
 import type { EllipseComponent } from "../types";
-import { getBoxCenter, mutate, rotateMany, subtract } from "../util";
+import { filterComponent, getBoxCenter, mutate, rotateMany, subtract } from "../util";
 
 function Ellipse(component: EllipseComponent) {
   const bounds = component.bounds;
@@ -19,7 +19,7 @@ function Ellipse(component: EllipseComponent) {
     `A${radius.x} ${radius.y} ${bounds.rotation} 1 1 ${anchors[0].x} ${anchors[0].y}`,
   ].join(" ");
 
-  return <path {...component} d={d} data-id={component.id} />;
+  return <path d={d} {...filterComponent(component)} />;
 }
 
 export default Ellipse;

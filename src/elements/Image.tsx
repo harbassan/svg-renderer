@@ -1,5 +1,5 @@
 import type { ImageComponent } from "../types";
-import { getRelativeBounds, mutate, subtract } from "../util";
+import { filterComponent, getRelativeBounds, mutate, subtract } from "../util";
 
 function Image(component: ImageComponent) {
   const { bounds } = component;
@@ -19,8 +19,7 @@ function Image(component: ImageComponent) {
       width={relative.width}
       height={relative.height}
       transform={transform}
-      data-id={component.id}
-      {...component}
+      {...filterComponent(component)}
     />
   );
 }
